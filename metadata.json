@@ -1,0 +1,6 @@
+{
+  "name": "NNCM Church Portal",
+  "description": "Comprehensive Management Information System for New Nature in Christ Ministry, featuring member registries, financial transparency, and ministry coordination.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
