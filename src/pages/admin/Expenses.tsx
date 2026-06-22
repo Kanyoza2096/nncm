@@ -13,22 +13,38 @@ import {
   DollarSign,
   FileText,
   Trash2,
-  Edit2
+  Edit2,
+  Loader2,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { expenseService } from '../../services/expenses';
-import { Expense } from '../../types';
+import { projectService } from '../../services/projects';
+import { Expense, Project } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { formatCurrency } from '../../lib/currency-utils';
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showFilter, setShowFilter] = useState(false);
 
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    description: '',
+    category: 'Training & Materials',
+    amount: '',
+    approvedBy: 'Finance Elder',
+    projectId: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     fetchExpenses();
+    fetchProjects();
   }, []);
 
   const fetchExpenses = async () => {
@@ -40,6 +56,64 @@ export default function Expenses() {
       toast.error('Financial ledger unreachable.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const data = await projectService.getProjects();
+      setProjects(data);
+    } catch (err) {
+      console.error('Failed to load projects for budget assigning:', err);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.description || !formData.amount) {
+      toast.error('Description and Amount are required.');
+      return;
+    }
+    const amt = parseFloat(formData.amount);
+    if (isNaN(amt) || amt <= 0) {
+      toast.error('Please enter a valid expense amount.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await expenseService.logExpense({
+        description: formData.description,
+        category: formData.category,
+        amount: amt,
+        approvedBy: formData.approvedBy,
+        projectId: formData.projectId || 'proj-general',
+        date: Date.now()
+      });
+      toast.success('Successfully logged expense into financial ledger!');
+      setShowForm(false);
+      setFormData({
+        description: '',
+        category: 'Training & Materials',
+        amount: '',
+        approvedBy: 'Finance Elder',
+        projectId: ''
+      });
+      fetchExpenses();
+    } catch (err) {
+      toast.error('Failed to record expense.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this operational spend record?')) return;
+    try {
+      await expenseService.deleteExpense(id);
+      toast.success('Expense record deleted from local ledger.');
+      fetchExpenses();
+    } catch (err) {
+      toast.error('Failed to delete expense record.');
     }
   };
 
@@ -61,7 +135,10 @@ export default function Expenses() {
            <button className="p-2.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl text-slate-400 hover:text-indigo-600 transition-colors shadow-sm">
               <Download className="w-5 h-5" />
            </button>
-           <button className="bg-indigo-600 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 transition-all">
+           <button 
+             onClick={() => setShowForm(true)}
+             className="bg-indigo-600 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 transition-all outline-none"
+           >
              <Plus className="w-4 h-4" /> Book Daily Expense
            </button>
         </div>
@@ -163,7 +240,10 @@ export default function Expenses() {
                           <button className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer">
                              <Edit2 className="w-4 h-4" />
                           </button>
-                          <button className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors cursor-pointer">
+                          <button 
+                            onClick={() => handleDeleteExpense(e.id)}
+                            className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                          >
                              <Trash2 className="w-4 h-4" />
                           </button>
                        </div>
@@ -175,6 +255,135 @@ export default function Expenses() {
           </table>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowForm(false)} 
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.95, opacity: 0 }} 
+              className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden p-8 sm:p-10 border border-slate-100 dark:border-slate-800"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-rose-500 animate-pulse" /> Book Daily Expense
+                  </h3>
+                  <p className="text-xs text-slate-400 font-light mt-1">Record and disburse actual ministry operational costs.</p>
+                </div>
+                <button 
+                  onClick={() => setShowForm(false)} 
+                  className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all animate-none"
+                >
+                  <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Voucher Description *</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={formData.description}
+                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="e.g. Purchased 10 bags of cement for outpost build" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Spend Amount (MWK) *</label>
+                    <input 
+                      type="number" 
+                      required
+                      min="1"
+                      value={formData.amount}
+                      onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                      placeholder="e.g. 150000" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Budget Category</label>
+                    <select 
+                      value={formData.category}
+                      onChange={e => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    >
+                      <option value="Training & Materials">Training & Materials</option>
+                      <option value="Transportation">Transportation / Crusade logistics</option>
+                      <option value="Sanctuary operations">Sanctuary operations</option>
+                      <option value="Outpost Development">Outpost Development</option>
+                      <option value="Welfare & Relief">Welfare Support</option>
+                      <option value="Media & Sound IT">Media & Sound IT</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Assign to Sanctuary Project</label>
+                    <select 
+                      value={formData.projectId}
+                      onChange={e => setFormData({ ...formData, projectId: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    >
+                      <option value="">-- General Operations (None) --</option>
+                      {projects.map(p => (
+                        <option key={p.id} value={p.id}>{p.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Authorizing Overseer</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formData.approvedBy}
+                      onChange={e => setFormData({ ...formData, approvedBy: e.target.value })}
+                      placeholder="e.g. Finance Elder" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowForm(false)} 
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-widest rounded-xl outline-none active:scale-95 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 outline-none"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Recording...
+                      </>
+                    ) : (
+                      'Record Outflow'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -16,7 +16,10 @@ import {
   XCircle,
   Tag,
   ImageIcon,
-  MoreVertical
+  MoreVertical,
+  Loader2,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { blogService } from '../../services/blog';
 import { BlogPost } from '../../types';
@@ -29,6 +32,16 @@ export default function AdminBlog() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showFilter, setShowFilter] = useState(false);
+
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    category: 'Spiritual Announcement',
+    authorName: 'Apostle Gabriel',
+    summary: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -46,6 +59,55 @@ export default function AdminBlog() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title || !formData.content) {
+      toast.error('Article Title and content are required.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await blogService.createBlogPost({
+        title: formData.title,
+        content: formData.content,
+        summary: formData.summary || formData.content.substring(0, 120) + '...',
+        category: formData.category,
+        author: {
+          name: formData.authorName,
+          role: 'Ministry Overseer'
+        },
+        coverImage: 'announcement-banner-default',
+        published: true,
+        date: new Date().toLocaleDateString()
+      } as any);
+      toast.success('Announcement broadcasted successfully!');
+      setShowForm(false);
+      setFormData({
+        title: '',
+        content: '',
+        category: 'Spiritual Announcement',
+        authorName: 'Apostle Gabriel',
+        summary: ''
+      });
+      fetchPosts();
+    } catch (err) {
+      toast.error('Failed to publish announcement.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteBlogPost = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this broadcast article?')) return;
+    try {
+      await blogService.deleteBlogPost(id);
+      toast.success('Announcement deleted successfully!');
+      fetchPosts();
+    } catch (err) {
+      toast.error('Failed to delete announcement.');
+    }
+  };
+
   const filtered = posts.filter(p => 
     p.title.toLowerCase().includes(search.toLowerCase()) || 
     p.author.name.toLowerCase().includes(search.toLowerCase())
@@ -58,7 +120,10 @@ export default function AdminBlog() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Ministry Announcements (Blog)</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Spiritual feeding and official news broadcast for the global assembly.</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 transition-all">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="bg-indigo-600 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 transition-all outline-none"
+        >
           <Plus className="w-4 h-4" /> Create New Article
         </button>
       </div>
@@ -72,11 +137,11 @@ export default function AdminBlog() {
             </div>
             <h4 className="text-2xl font-black text-slate-900 dark:text-white">{posts.length} Pieces</h4>
          </div>
-         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center border-t-4 border-t-indigo-600">
+         <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center border-t-4 border-t-indigo-600">
             <div className="flex items-center gap-3 mb-1">
                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Last Feed Distribution</span>
             </div>
-            <h4 className="text-lg font-black text-slate-900 dark:text-white">Just Now</h4>
+            <h4 className="text-lg font-black text-slate-950 dark:text-white">Just Now</h4>
          </div>
       </div>
 
@@ -119,7 +184,7 @@ export default function AdminBlog() {
                     <td className="px-6 py-5">
                        <div className="flex items-center gap-4">
                           <div className="w-14 h-10 rounded-xl bg-slate-900 border border-slate-800 overflow-hidden relative shrink-0">
-                             <img src={getImageUrl(p.coverImage)} alt="" className="w-full h-full object-cover opacity-60" />
+                             <img src={getImageUrl(p.coverImage)} alt="" className="w-full h-full object-cover opacity-60 animate-none" />
                           </div>
                           <div>
                              <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight line-clamp-1">{p.title}</p>
@@ -140,8 +205,13 @@ export default function AdminBlog() {
                     </td>
                     <td className="px-6 py-5 text-right">
                        <div className="flex items-center justify-end gap-2">
-                          <button className="p-2 text-slate-300 hover:text-indigo-600 transition-all"><Edit2 className="w-4 h-4" /></button>
-                          <button className="p-2 text-slate-300 hover:text-rose-500 transition-all"><Trash2 className="w-4 h-4" /></button>
+                          <button className="p-2 text-slate-300 hover:text-indigo-600 transition-all cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+                          <button 
+                            onClick={() => handleDeleteBlogPost(p.id)}
+                            className="p-2 text-slate-300 hover:text-rose-500 transition-all cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                        </div>
                     </td>
                   </tr>
@@ -151,6 +221,129 @@ export default function AdminBlog() {
           </table>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowForm(false)} 
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.95, opacity: 0 }} 
+              className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden p-8 sm:p-10 border border-slate-100 dark:border-slate-800"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-indigo-600" /> Create New Article
+                  </h3>
+                  <p className="text-xs text-slate-400 font-light mt-1">Publish an official circular, spiritual sermon, or newsletter to the platform web feeds.</p>
+                </div>
+                <button 
+                  onClick={() => setShowForm(false)} 
+                  className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Article Title *</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formData.title}
+                      onChange={e => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="e.g. Walking in Divine Prosperity" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Feed Category</label>
+                    <select 
+                      value={formData.category}
+                      onChange={e => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    >
+                      <option value="Spiritual feeding">Spiritual Feeding / Sermons</option>
+                      <option value="Event Notice">Official Ministry Events</option>
+                      <option value="Zomba Outpost news">Zomba Outpost circulars</option>
+                      <option value="Special notice">Important Administrative Bulletins</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Publishing Author</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formData.authorName}
+                      onChange={e => setFormData({ ...formData, authorName: e.target.value })}
+                      placeholder="e.g. Apostle Gabriel Phiri" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Short Summary</label>
+                    <input 
+                      type="text" 
+                      value={formData.summary}
+                      onChange={e => setFormData({ ...formData, summary: e.target.value })}
+                      placeholder="e.g. An encouraging study regarding spiritual stewardship..." 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Body Content * (Markdown supported)</label>
+                  <textarea 
+                    rows={6}
+                    required
+                    value={formData.content}
+                    onChange={e => setFormData({ ...formData, content: e.target.value })}
+                    placeholder="Enter the full text of the article..." 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white resize-none font-mono"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowForm(false)} 
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-widest rounded-xl outline-none active:scale-95 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 outline-none"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Publishing...
+                      </>
+                    ) : (
+                      'Publish Now'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

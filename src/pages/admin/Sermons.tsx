@@ -15,7 +15,9 @@ import {
   BookMarked,
   Sparkles,
   Save,
-  Trash
+  Trash,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { churchService } from '../../services/churchService';
 import { Sermon } from '../../types';
@@ -30,6 +32,10 @@ export default function AdminSermons() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSermon, setEditingSermon] = useState<Sermon | null>(null);
+
+  // Deletion confirmation states
+  const [deleteConfirmSermon, setDeleteConfirmSermon] = useState<Sermon | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -91,15 +97,18 @@ export default function AdminSermons() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      try {
-        await churchService.sermons.delete(id);
-        toast.success(`Removed sermon: "${title}"`);
-        fetchSermons();
-      } catch (err) {
-        toast.error('Failed to remove sermon outline.');
-      }
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmSermon) return;
+    setIsDeleting(true);
+    try {
+      await churchService.sermons.delete(deleteConfirmSermon.id);
+      toast.success(`Removed sermon: "${deleteConfirmSermon.title}"`);
+      setDeleteConfirmSermon(null);
+      fetchSermons();
+    } catch (err) {
+      toast.error('Failed to remove sermon outline.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -237,7 +246,7 @@ export default function AdminSermons() {
                              <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button 
-                            onClick={() => handleDelete(s.id, s.title)}
+                            onClick={() => setDeleteConfirmSermon(s)}
                             className="p-1.5 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 hover:text-red-700 text-red-650 rounded-lg transition-colors border border-red-100/30"
                             title="Remove"
                           >
@@ -444,6 +453,60 @@ export default function AdminSermons() {
               </form>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirmation Modal for Sermons Deletion */}
+      <AnimatePresence>
+        {deleteConfirmSermon && (
+          <div className="fixed inset-0 z-50 bg-[#020617]/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" /> Confirm Deletion
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-450 mt-2.5 leading-relaxed">
+                Are you sure you want to delete sermon <span className="font-extrabold text-slate-800 dark:text-slate-200">"{deleteConfirmSermon.title}"</span>? This will permanently remove the record from the public stream.
+              </p>
+
+              {deleteConfirmSermon.coverImage && (
+                <div className="mt-3 aspect-video rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-100">
+                  <img src={getImageUrl(deleteConfirmSermon.coverImage)} alt={deleteConfirmSermon.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              )}
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmSermon(null)}
+                  disabled={isDeleting}
+                  className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete</span>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

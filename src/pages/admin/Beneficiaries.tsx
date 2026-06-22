@@ -16,7 +16,9 @@ import {
   Edit2,
   Trash2,
   History,
-  Heart
+  Heart,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { beneficiaryService } from '../../services/beneficiaries';
 import { Beneficiary } from '../../types';
@@ -31,6 +33,10 @@ export default function Beneficiaries() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+
+  // Deletion confirmation states
+  const [deleteConfirmBen, setDeleteConfirmBen] = useState<Beneficiary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Form State
   const [formData, setFormData] = useState<Partial<Beneficiary>>({
@@ -84,15 +90,18 @@ export default function Beneficiaries() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this church member record?')) {
-      try {
-        await beneficiaryService.deleteBeneficiary(id);
-        toast.success('Member record deleted successfully.');
-        fetchBeneficiaries();
-      } catch (err) {
-        toast.error('Could not delete member record.');
-      }
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmBen) return;
+    setIsDeleting(true);
+    try {
+      await beneficiaryService.deleteBeneficiary(deleteConfirmBen.id);
+      toast.success('Member record deleted successfully.');
+      setDeleteConfirmBen(null);
+      fetchBeneficiaries();
+    } catch (err) {
+      toast.error('Could not delete member record.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -287,7 +296,7 @@ export default function Beneficiaries() {
                             <Edit2 className="w-4 h-4" />
                          </button>
                          <button 
-                            onClick={() => handleDelete(ben.id)}
+                            onClick={() => setDeleteConfirmBen(ben)}
                             className="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                             title="Delete Member Record"
                          >
@@ -439,6 +448,54 @@ export default function Beneficiaries() {
                     <button type="submit" className="flex-1 py-3.5 bg-indigo-600 hover:bg-slate-950 text-white font-black rounded-xl text-xs uppercase tracking-widest shadow-xl shadow-indigo-600/30 transition-all active:scale-95">{isEditing ? 'Save Changes' : 'Complete Enrollment'}</button>
                  </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirmation Modal for Member deletion */}
+      <AnimatePresence>
+        {deleteConfirmBen && (
+          <div className="fixed inset-0 z-50 bg-[#020617]/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" /> Confirm Deletion
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-450 mt-2.5 leading-relaxed">
+                Are you sure you want to delete member record for <span className="font-extrabold text-slate-800 dark:text-slate-200">"{deleteConfirmBen.name}"</span>? This will permanently remove them from the church membership rolls.
+              </p>
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmBen(null)}
+                  disabled={isDeleting}
+                  className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete</span>
+                  )}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

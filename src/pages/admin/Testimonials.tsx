@@ -12,7 +12,10 @@ import {
   Clock,
   MoreVertical,
   Activity,
-  Heart
+  Heart,
+  Loader2,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { testimonialService } from '../../services/testimonials';
 import { Testimonial } from '../../types';
@@ -23,6 +26,15 @@ export default function AdminTestimonials() {
   const [items, setItems] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    role: 'Congregation Member',
+    organization: 'Zomba Assembly',
+    content: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -40,10 +52,56 @@ export default function AdminTestimonials() {
     }
   };
 
-  const filtered = items.filter(i => 
-    i.author.toLowerCase().includes(search.toLowerCase()) || 
-    i.content.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.content) {
+      toast.error('Lover name and Testimony content are required.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await testimonialService.createTestimonial({
+        name: formData.name,
+        role: formData.role,
+        organization: formData.organization,
+        content: formData.content,
+        photoURL: '',
+        rating: 5,
+        approved: true,
+        date: Date.now()
+      });
+      toast.success('Spiritual proof recorded and approved into archives!');
+      setShowForm(false);
+      setFormData({
+        name: '',
+        role: 'Congregation Member',
+        organization: 'Zomba Assembly',
+        content: ''
+      });
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to log spiritual proof.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteTestimonial = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this spiritual proof entry?')) return;
+    try {
+      await testimonialService.deleteTestimonial(id);
+      toast.success('Spiritual proof entry deleted from archives.');
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to delete testimony.');
+    }
+  };
+
+  const filtered = items.filter(i => {
+    const authorName = i.name || (i as any).author || '';
+    return authorName.toLowerCase().includes(search.toLowerCase()) || 
+           i.content.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
     <div className="space-y-6 animate-fadeIn font-sans">
@@ -52,7 +110,10 @@ export default function AdminTestimonials() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Public Testimonies</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Verifiable spiritual proof of kingdom impact and miracles.</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 transition-all">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="bg-indigo-600 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 transition-all outline-none"
+        >
           <Plus className="w-4 h-4" /> Log Spiritual Proof
         </button>
       </div>
@@ -63,7 +124,7 @@ export default function AdminTestimonials() {
                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg"><Activity className="w-4 h-4" /></div>
                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Growth Index</span>
             </div>
-            <h4 className="text-2xl font-black text-slate-900 dark:text-white">+14 New Proofs</h4>
+            <h4 className="text-2xl font-black text-slate-900 dark:text-white">{items.length} Proofs</h4>
          </div>
       </div>
 
@@ -109,7 +170,10 @@ export default function AdminTestimonials() {
                     <td className="px-6 py-5">
                        <div className="flex items-center gap-2">
                           <Heart className="w-4 h-4 text-rose-500 fill-rose-500/10" />
-                          <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight">{item.author}</span>
+                          <div>
+                            <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight block leading-none">{item.name || (item as any).author}</span>
+                            <span className="text-[9px] font-medium text-indigo-600 dark:text-indigo-400 block mt-1 uppercase tracking-widest">{item.role || 'Member'}</span>
+                          </div>
                        </div>
                     </td>
                     <td className="px-6 py-5">
@@ -121,7 +185,14 @@ export default function AdminTestimonials() {
                        {new Date(item.date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-5 text-right">
-                       <button className="p-2 text-slate-300 hover:text-indigo-600 transition-all"><MoreVertical className="w-5 h-5" /></button>
+                       <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleDeleteTestimonial(item.id)}
+                            className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                       </div>
                     </td>
                   </tr>
                 ))
@@ -130,6 +201,113 @@ export default function AdminTestimonials() {
           </table>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowForm(false)} 
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.95, opacity: 0 }} 
+              className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden p-8 sm:p-10 border border-slate-100 dark:border-slate-800"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-indigo-600 animate-pulse" /> Log Spiritual Proof
+                  </h3>
+                  <p className="text-xs text-slate-400 font-light mt-1">Record verified visual healings, breakthough testimonies, and divine impact reports.</p>
+                </div>
+                <button 
+                  onClick={() => setShowForm(false)} 
+                  className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Author Identity *</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Sister Grace Banda" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Author Role / Office</label>
+                    <input 
+                      type="text" 
+                      value={formData.role}
+                      onChange={e => setFormData({ ...formData, role: e.target.value })}
+                      placeholder="e.g. Youth Leader / Member" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Assembly / Group</label>
+                    <input 
+                      type="text" 
+                      value={formData.organization}
+                      onChange={e => setFormData({ ...formData, organization: e.target.value })}
+                      placeholder="e.g. Zomba Board / Youth group" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Spiritual Proof details *</label>
+                  <textarea 
+                    rows={5}
+                    required
+                    value={formData.content}
+                    onChange={e => setFormData({ ...formData, content: e.target.value })}
+                    placeholder="Write details of the breakthrough, healings or spiritual reports..." 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white resize-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowForm(false)} 
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-widest rounded-xl outline-none active:scale-95 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 outline-none"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Logging...
+                      </>
+                    ) : (
+                      'Log Breakthrough'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

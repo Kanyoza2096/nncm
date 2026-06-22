@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import NativeFileUpload from './NativeFileUpload';
 import { getImageUrl } from '../lib/image-utils';
-import { FileText, Eye, Trash2, Calendar, User, ExternalLink, Loader2, File, Image as ImageIcon } from 'lucide-react';
+import { FileText, Eye, Trash2, Calendar, User, ExternalLink, Loader2, File, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface FileReference {
   id: string;
@@ -32,6 +33,10 @@ export default function FileAttachmentManager({
   const { profile } = useAuth();
   const [files, setFiles] = useState<FileReference[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Deletion confirmation states
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchFiles();
@@ -156,25 +161,29 @@ export default function FileAttachmentManager({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this document reference?")) {
-      try {
-        const { error } = await supabase
-          .from('attachments')
-          .delete()
-          .eq('id', id);
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('attachments')
+        .delete()
+        .eq('id', deleteConfirmId);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast.success("Document attachment deleted.");
-        fetchFiles();
-      } catch (err: any) {
-        console.warn("Database deletion failed. Removing from local fallback layer:", err);
-        const updatedList = files.filter(f => f.id !== id);
-        setFiles(updatedList);
-        localStorage.setItem(`attachments_${entityType}_${entityId}`, JSON.stringify(updatedList));
-        toast.success("Removed document reference from session context.");
-      }
+      toast.success("Document attachment deleted.");
+      setDeleteConfirmId(null);
+      fetchFiles();
+    } catch (err: any) {
+      console.warn("Database deletion failed. Removing from local fallback layer:", err);
+      const updatedList = files.filter(f => f.id !== deleteConfirmId);
+      setFiles(updatedList);
+      localStorage.setItem(`attachments_${entityType}_${entityId}`, JSON.stringify(updatedList));
+      setDeleteConfirmId(null);
+      toast.success("Removed document reference from session context.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -239,7 +248,7 @@ export default function FileAttachmentManager({
                     <ExternalLink className="w-4 h-4" />
                   </a>
                   <button
-                    onClick={() => handleDelete(file.id)}
+                    onClick={() => setDeleteConfirmId(file.id)}
                     className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition shrink-0 cursor-pointer"
                     title="Delete Reference"
                   >
@@ -251,6 +260,54 @@ export default function FileAttachmentManager({
           })}
         </div>
       )}
+
+      {/* Custom Confirmation Modal for Document Deletion */}
+      <AnimatePresence>
+        {deleteConfirmId && (
+          <div className="fixed inset-0 z-50 bg-[#020617]/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl relative"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" /> Delete Attachment
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                Are you sure you want to delete this attached document reference? This cannot be undone.
+              </p>
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmId(null)}
+                  disabled={isDeleting}
+                  className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-rose-600/20 flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete</span>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

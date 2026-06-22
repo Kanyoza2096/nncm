@@ -55,6 +55,10 @@ export default function AdminGallery() {
   const [uploadTab, setUploadTab] = useState<'device' | 'url'>('device');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Deletion confirmation states
+  const [deleteConfirmImg, setDeleteConfirmImg] = useState<GalleryImage | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Single URL Upload State
   const [singleFormData, setSingleFormData] = useState({
     title: '',
@@ -161,15 +165,18 @@ export default function AdminGallery() {
     toast.success('Suggested preset photo details loaded into form.');
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Delete this photographic record? It will be removed from the public gallery.')) {
-      try {
-        await churchService.gallery.delete(id);
-        toast.success('Photographic proof archived and removed.');
-        fetchImages();
-      } catch (err) {
-        toast.error('Archive operation aborted.');
-      }
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmImg) return;
+    setIsDeleting(true);
+    try {
+      await churchService.gallery.delete(deleteConfirmImg.id);
+      toast.success('Photographic proof archived and removed.');
+      setDeleteConfirmImg(null);
+      fetchImages();
+    } catch (err) {
+      toast.error('Archive operation aborted.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -456,7 +463,7 @@ export default function AdminGallery() {
                         Enlarge URL
                       </a>
                       <button 
-                        onClick={() => handleDelete(img.id)}
+                        onClick={() => setDeleteConfirmImg(img)}
                         className="p-1 px-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
                         title="Archive Asset"
                       >
@@ -909,6 +916,59 @@ export default function AdminGallery() {
 
             </motion.div>
 
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirmation Modal to bypass native iframe confirm blocks */}
+      <AnimatePresence>
+        {deleteConfirmImg && (
+          <div className="fixed inset-0 z-50 bg-[#020617]/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative"
+            >
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" /> Confirm Archival Delete
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-450 mt-2.5 leading-relaxed">
+                Are you sure you want to delete <span className="font-extrabold text-slate-800 dark:text-slate-200">"{deleteConfirmImg.title}"</span>? This will permanently remove the record from the public gallery stream.
+              </p>
+
+              {deleteConfirmImg.url && (
+                <div className="mt-3 aspect-video rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-100">
+                  <img src={deleteConfirmImg.url} alt={deleteConfirmImg.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              )}
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmImg(null)}
+                  disabled={isDeleting}
+                  className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete</span>
+                  )}
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

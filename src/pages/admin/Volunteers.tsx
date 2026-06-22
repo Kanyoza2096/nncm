@@ -15,7 +15,9 @@ import {
   AlertCircle,
   MoreVertical,
   Activity,
-  HeartHandshake
+  HeartHandshake,
+  Loader2,
+  X
 } from 'lucide-react';
 import { volunteerService } from '../../services/volunteers';
 import { Volunteer } from '../../types';
@@ -27,6 +29,17 @@ export default function Volunteers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState('All');
+
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    department: 'Ushering',
+    skillsStr: '',
+    availability: 'Weekends'
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchVolunteers();
@@ -41,6 +54,55 @@ export default function Volunteers() {
       toast.error('Workforce registry unreachable.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) {
+      toast.error('Identity name and contact email are required.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const skillsArray = formData.skillsStr 
+        ? formData.skillsStr.split(',').map(s => s.trim()).filter(s => s.length > 0)
+        : [formData.department + ' Support'];
+      await volunteerService.registerVolunteer({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        department: formData.department,
+        skills: skillsArray,
+        availability: formData.availability,
+        status: 'active'
+      } as any);
+      toast.success('Spiritual servant enlisted successfully!');
+      setShowForm(false);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        department: 'Ushering',
+        skillsStr: '',
+        availability: 'Weekends'
+      });
+      fetchVolunteers();
+    } catch (err) {
+      toast.error('Failed to enlist servant.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteVolunteer = async (id: string) => {
+    if (!window.confirm('Are you sure you want to retire this servant from active ministry duty?')) return;
+    try {
+      await volunteerService.deleteVolunteer(id);
+      toast.success('Servant profile retired from active ledger.');
+      fetchVolunteers();
+    } catch (err) {
+      toast.error('Failed to retire servant.');
     }
   };
 
@@ -60,7 +122,10 @@ export default function Volunteers() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Ministry Servers List</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Coordinating the spiritual workforce across all departments.</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 transition-all">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="bg-indigo-600 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-indigo-600/30 flex items-center gap-2 active:scale-95 transition-all outline-none"
+        >
           <Plus className="w-4 h-4" /> Enlist New Server
         </button>
       </div>
@@ -173,9 +238,14 @@ export default function Volunteers() {
                        {new Date(v.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-5 text-right">
-                       <button className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer">
-                          <MoreVertical className="w-5 h-5" />
-                       </button>
+                       <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleDeleteVolunteer(v.id)}
+                            className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/25 rounded-lg transition-colors cursor-pointer"
+                          >
+                             <Trash2 className="w-4 items-center justify-center h-4" />
+                          </button>
+                       </div>
                     </td>
                   </tr>
                 ))
@@ -184,6 +254,143 @@ export default function Volunteers() {
           </table>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowForm(false)} 
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.95, opacity: 0 }} 
+              className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden p-8 sm:p-10 border border-slate-100 dark:border-slate-800"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2">
+                    <HeartHandshake className="w-5 h-5 text-indigo-600 animate-pulse" /> Enlist New Server
+                  </h3>
+                  <p className="text-xs text-slate-400 font-light mt-1">Register local Levites and helpers to specific ministry workflows.</p>
+                </div>
+                <button 
+                  onClick={() => setShowForm(false)} 
+                  className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Full Name *</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Brother Thomas Phiri" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Contact Email *</label>
+                    <input 
+                      type="email" 
+                      required
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="e.g. thomas@gmail.com" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Phone Number</label>
+                    <input 
+                      type="text" 
+                      value={formData.phone}
+                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="e.g. +265 888 12 34 56" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Ministry Department</label>
+                    <select 
+                      value={formData.department}
+                      onChange={e => setFormData({ ...formData, department: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    >
+                      <option value="Ushering">Ushering & Protocol</option>
+                      <option value="Choir">Praising Choir & Worship</option>
+                      <option value="Media">Media & Technical Support</option>
+                      <option value="Cleaning">Sanctuary Cleaning & Care</option>
+                      <option value="Security">Security & Orderly</option>
+                      <option value="Welfare">Welfare, Relief & Hospitality</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Availability Cycle</label>
+                    <select 
+                      value={formData.availability}
+                      onChange={e => setFormData({ ...formData, availability: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    >
+                      <option value="Weekends">Sundays & Saturday Rehearsals</option>
+                      <option value="Weekdays">Midweek fellowships / Night vigils</option>
+                      <option value="Flexible">Full-Time availability</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Skills & Spiritual Gifts (comma-separated)</label>
+                  <input 
+                    type="text" 
+                    value={formData.skillsStr}
+                    onChange={e => setFormData({ ...formData, skillsStr: e.target.value })}
+                    placeholder="e.g. Sound design, Electric guitar, Public speaking, Logistics" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowForm(false)} 
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-widest rounded-xl outline-none active:scale-95 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 outline-none"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Enlisting...
+                      </>
+                    ) : (
+                      'Enlist Servant'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

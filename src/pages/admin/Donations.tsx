@@ -13,7 +13,10 @@ import {
   Smartphone,
   ExternalLink,
   Lock,
-  Sparkles
+  Sparkles,
+  Loader2,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { donorService } from '../../services/donors';
 import { Donation } from '../../types';
@@ -26,6 +29,55 @@ export default function Donations() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showEntryForm, setShowEntryForm] = useState(false);
+
+  const [formData, setFormData] = useState({
+    donorName: '',
+    donorEmail: '',
+    amount: '',
+    donationType: 'Tithe',
+    paymentMethod: 'Mobile Money',
+    notes: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.donorName || !formData.amount) {
+      toast.error('Partner Giver Name and Seed Amount are required.');
+      return;
+    }
+    const amt = parseFloat(formData.amount);
+    if (isNaN(amt) || amt <= 0) {
+      toast.error('Please enter a valid donor seed amount.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await donorService.createDonation({
+        donorName: formData.donorName,
+        donorEmail: formData.donorEmail,
+        amount: amt,
+        donationType: formData.donationType,
+        paymentMethod: formData.paymentMethod,
+        notes: formData.notes
+      });
+      toast.success('Successfully booked harvest into transparent ledger!');
+      setShowEntryForm(false);
+      setFormData({
+        donorName: '',
+        donorEmail: '',
+        amount: '',
+        donationType: 'Tithe',
+        paymentMethod: 'Mobile Money',
+        notes: ''
+      });
+      fetchDonations();
+    } catch (err) {
+      toast.error('Failed to book harvest record.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     fetchDonations();
@@ -177,6 +229,145 @@ export default function Donations() {
            </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showEntryForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setShowEntryForm(false)} 
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.95, opacity: 0 }} 
+              className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden p-8 sm:p-10 border border-slate-100 dark:border-slate-800"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-indigo-600 animate-pulse" /> Book New Harvest
+                  </h3>
+                  <p className="text-xs text-slate-400 font-light mt-1">Direct manual entry of verified kingdom seeds & partnerships.</p>
+                </div>
+                <button 
+                  onClick={() => setShowEntryForm(false)} 
+                  className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Partner Giver Name *</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formData.donorName}
+                      onChange={e => setFormData({ ...formData, donorName: e.target.value })}
+                      placeholder="e.g. Elder Banda" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Partner Giver Email</label>
+                    <input 
+                      type="email" 
+                      value={formData.donorEmail}
+                      onChange={e => setFormData({ ...formData, donorEmail: e.target.value })}
+                      placeholder="e.g. partner@gmail.com" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Seed Amount (MWK) *</label>
+                    <input 
+                      type="number" 
+                      required
+                      min="1"
+                      value={formData.amount}
+                      onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                      placeholder="e.g. 25000" 
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Harvest Designation</label>
+                    <select 
+                      value={formData.donationType}
+                      onChange={e => setFormData({ ...formData, donationType: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                    >
+                      <option value="Tithe">Spiritual Tithe</option>
+                      <option value="Offering">Mission Offering</option>
+                      <option value="Seed Partnership">Covenant partnership</option>
+                      <option value="Sanctuary Build">Sanctuary Build fund</option>
+                      <option value="Thanksgiving">Thanksgiving Altar</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Payment Method / Channel</label>
+                  <select 
+                    value={formData.paymentMethod}
+                    onChange={e => setFormData({ ...formData, paymentMethod: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
+                  >
+                    <option value="Mobile Money (Airtel)">Mobile Money (Airtel)</option>
+                    <option value="Mobile Money (Mpamba)">Mobile Money (TNM Mpamba)</option>
+                    <option value="Bank Transfer">Bank Transfer (Standard Bank/NBM)</option>
+                    <option value="Cash Input">Manual Sanctuary Cash Envelope</option>
+                    <option value="Online Card">Visa/Mastercard Online gateway</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Audit Notes / Narrative</label>
+                  <textarea 
+                    rows={3}
+                    value={formData.notes}
+                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Brief notes regarding tithing week, special purpose, or prayer requests... " 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white resize-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowEntryForm(false)} 
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] tracking-widest rounded-xl outline-none active:scale-95 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 outline-none"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Booking...
+                      </>
+                    ) : (
+                      'Book Harvest'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

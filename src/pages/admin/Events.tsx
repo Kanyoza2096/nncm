@@ -12,7 +12,9 @@ import {
   Sparkles,
   Save,
   CheckCircle2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { churchService } from '../../services/churchService';
 import { ChurchEvent } from '../../types';
@@ -27,6 +29,10 @@ export default function AdminEvents() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ChurchEvent | null>(null);
+
+  // Deletion confirmation states
+  const [deleteConfirmEvt, setDeleteConfirmEvt] = useState<ChurchEvent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -85,15 +91,18 @@ export default function AdminEvents() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      try {
-        await churchService.events.delete(id);
-        toast.success(`Removed event: "${title}"`);
-        fetchEvents();
-      } catch (err) {
-        toast.error('Failed to remove event catalog.');
-      }
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmEvt) return;
+    setIsDeleting(true);
+    try {
+      await churchService.events.delete(deleteConfirmEvt.id);
+      toast.success(`Removed event: "${deleteConfirmEvt.title}"`);
+      setDeleteConfirmEvt(null);
+      fetchEvents();
+    } catch (err) {
+      toast.error('Failed to remove event catalog.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -240,7 +249,7 @@ export default function AdminEvents() {
                              <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button 
-                            onClick={() => handleDelete(e.id, e.title)}
+                            onClick={() => setDeleteConfirmEvt(e)}
                             className="p-1.5 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 hover:text-red-700 text-red-650 rounded-lg transition-colors border border-red-100/30"
                             title="Remove"
                           >
@@ -409,6 +418,60 @@ export default function AdminEvents() {
               </form>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirmation Modal for Events Deletion */}
+      <AnimatePresence>
+        {deleteConfirmEvt && (
+          <div className="fixed inset-0 z-50 bg-[#020617]/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" /> Confirm Deletion
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-450 mt-2.5 leading-relaxed">
+                Are you sure you want to delete <span className="font-extrabold text-slate-800 dark:text-slate-200">"{deleteConfirmEvt.title}"</span>? This will permanently remove the record from the public event stream.
+              </p>
+
+              {deleteConfirmEvt.image && (
+                <div className="mt-3 aspect-video rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-100">
+                  <img src={getImageUrl(deleteConfirmEvt.image)} alt={deleteConfirmEvt.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              )}
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmEvt(null)}
+                  disabled={isDeleting}
+                  className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete</span>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
