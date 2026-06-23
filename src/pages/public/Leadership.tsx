@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Mail, MessageSquare, ShieldCheck, Sparkles } from 'lucide-react';
+import { Mail, MessageSquare, ShieldCheck, Sparkles, User } from 'lucide-react';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
+import { authService } from '../../services/auth';
+import { User as UserType } from '../../types';
+import { getImageUrl } from '../../lib/image-utils';
 
 export default function Leadership() {
   useDocumentMeta({
@@ -11,6 +15,29 @@ export default function Leadership() {
   });
 
   const { settings } = useOrgSettings();
+  const [teamMembers, setTeamMembers] = useState<UserType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTeam() {
+      try {
+        const allUsers = await authService.getAllProfiles();
+        // Filter for leadership roles
+        const leadershipRoles = ['pastor', 'ministry_leader', 'readership', 'elder', 'deacon', 'admin', 'super_admin'];
+        const team = allUsers.filter(u => 
+          leadershipRoles.includes(u.role) && 
+          u.status === 'active' &&
+          u.name.toLowerCase() !== (settings.directorName || 'Pastor Richie Mkandawire').toLowerCase()
+        );
+        setTeamMembers(team);
+      } catch (err) {
+        console.error('Failed to fetch leadership team:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchTeam();
+  }, [settings.directorName]);
 
   return (
     <div className="bg-slate-50 min-h-screen pt-28 pb-20 font-sans">
@@ -41,8 +68,14 @@ export default function Leadership() {
           className="bg-white border border-slate-100 rounded-3xl p-8 sm:p-12 shadow-sm mb-16 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center"
         >
           <div className="lg:col-span-4 flex flex-col items-center">
-            <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden shadow-lg border-4 border-indigo-50 bg-slate-50 mb-6">
-              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80" alt="Senior Pastor" className="w-full h-full object-cover" />
+            <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden shadow-lg border-4 border-indigo-50 bg-slate-50 mb-6 focus-within:ring-2 ring-indigo-500 ring-offset-4 transition-all">
+              {settings.directorPhoto ? (
+                <img src={getImageUrl(settings.directorPhoto)} alt="Senior Pastor" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-indigo-600 text-white text-6xl font-black">
+                  {(settings.directorName || 'P').split(' ').map(n => n[0]).join('').toUpperCase()}
+                </div>
+              )}
             </div>
             
             <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-indigo-100">
@@ -71,10 +104,62 @@ export default function Leadership() {
           </div>
         </motion.div>
 
-        {/* Other Team Members Placeholder */}
-        <div className="text-center py-12 border-t border-slate-100">
-           <p className="text-slate-400 font-medium italic text-sm">Overseer boards and auxiliary pastoral profiles are currently being compiled for regional branches.</p>
-        </div>
+        {/* Other Team Members */}
+        {teamMembers.length > 0 ? (
+          <div className="space-y-12">
+            <div className="text-center">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-3">
+                <div className="h-px w-8 bg-slate-200" />
+                Regional Oversight & Ministry Leaders
+                <div className="h-px w-8 bg-slate-200" />
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {teamMembers.map((member, index) => (
+                <motion.div
+                  key={member.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow group text-center"
+                >
+                  <div className="relative w-24 h-24 mx-auto mb-4 rounded-2xl overflow-hidden border-2 border-slate-50 shadow-sm group-hover:scale-105 transition-transform duration-500">
+                    {member.photoURL ? (
+                      <img src={getImageUrl(member.photoURL)} alt={member.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-400 transition-colors">
+                        <User className="w-10 h-10" />
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-black text-slate-950 leading-tight group-hover:text-indigo-600 transition-colors">{member.name}</h3>
+                  <p className="text-[10px] font-bold uppercase text-indigo-500 tracking-widest mt-1">
+                    {member.role.replace('_', ' ')}
+                  </p>
+                  
+                  {member.whatsapp && (
+                    <div className="mt-4 pt-4 border-t border-slate-50">
+                      <a 
+                        href={`https://wa.me/${member.whatsapp.replace(/\+/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-emerald-600 font-bold text-[10px] uppercase tracking-wider hover:text-emerald-700 transition-colors"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Direct Counsel
+                      </a>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        ) : !isLoading && (
+          <div className="text-center py-12 border-t border-slate-100">
+             <p className="text-slate-400 font-medium italic text-sm">Overseer boards and auxiliary pastoral profiles are currently being compiled for regional branches.</p>
+          </div>
+        )}
 
       </div>
     </div>

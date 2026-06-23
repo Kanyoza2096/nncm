@@ -19,13 +19,17 @@ import {
   TrendingUp,
   Award,
   Globe,
-  Plus
+  Plus,
+  ShieldCheck,
+  User
 } from 'lucide-react';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
 import { churchService } from '../../services/churchService';
-import { Sermon, ChurchEvent, Devotional, PrayerCenterRequest } from '../../types';
+import { authService } from '../../services/auth';
+import { Sermon, ChurchEvent, Devotional, PrayerCenterRequest, User as UserType } from '../../types';
 import { toast } from 'sonner';
+import { getImageUrl } from '../../lib/image-utils';
 
 export default function Home() {
   useDocumentMeta({
@@ -41,6 +45,7 @@ export default function Home() {
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [devotional, setDevotional] = useState<Devotional | null>(null);
   const [prayers, setPrayers] = useState<PrayerCenterRequest[]>([]);
+  const [leadership, setLeadership] = useState<UserType[]>([]);
   
   // Prayer Form
   const [formName, setFormName] = useState('');
@@ -64,6 +69,13 @@ export default function Home() {
 
         const activePrayers = await churchService.prayers.getAll();
         setPrayers(activePrayers.slice(0, 3));
+
+        const allUsers = await authService.getAllProfiles();
+        const leaders = allUsers.filter(u => 
+          ['pastor', 'ministry_leader', 'readership'].includes(u.role) && 
+          u.status === 'active'
+        ).slice(0, 4);
+        setLeadership(leaders);
       } catch (err) {
         console.error('Failed loading home contents:', err);
       }
@@ -509,6 +521,73 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 6.5 Leadership Section */}
+      {leadership.length > 0 && (
+        <section className="py-24 bg-white overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+              <div className="max-w-2xl">
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-indigo-100 mb-4"
+                >
+                  <ShieldCheck className="w-4 h-4" /> Spiritual Shepherds
+                </motion.div>
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                  Meet Our Pastoral & Leadership Team
+                </h2>
+                <p className="mt-4 text-slate-500 font-light text-base sm:text-lg leading-relaxed">
+                  The dedicated men and women called to guide our ministry branches across the region.
+                </p>
+              </div>
+              <Link 
+                to="/leadership" 
+                className="inline-flex items-center gap-2 text-indigo-600 font-bold text-sm tracking-wide hover:underline group"
+              >
+                View Unified Registry <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {leadership.map((member, index) => (
+                <motion.div
+                  key={member.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="group relative"
+                >
+                  <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-sm border-2 border-slate-50 group-hover:shadow-xl transition-all duration-500">
+                    {member.photoURL ? (
+                      <img 
+                        src={getImageUrl(member.photoURL)} 
+                        alt={member.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300">
+                        <User className="w-16 h-16" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                    
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <p className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.2em] mb-1 drop-shadow-sm">
+                        {member.role.replace('_', ' ')}
+                      </p>
+                      <h3 className="text-xl font-black text-white leading-tight drop-shadow-md">{member.name}</h3>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 7. Giving Showcase */}
       <section className="bg-slate-950 relative text-white py-24 overflow-hidden border-t border-slate-900">
