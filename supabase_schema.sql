@@ -318,3 +318,34 @@ CREATE POLICY "Allow public insert of reports" ON public.reports FOR INSERT WITH
 CREATE POLICY "Allow public update of reports" ON public.reports FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete of reports" ON public.reports FOR DELETE USING (true);
 */
+
+
+-- =========================================================================
+-- 15. Create Supabase Storage Buckets & Policies for Public File Management
+-- =========================================================================
+
+-- Create required storage buckets if they do NOT exist, and set them to PUBLIC
+INSERT INTO storage.buckets (id, name, public) 
+VALUES 
+  ('logos', 'logos', true),
+  ('avatars', 'avatars', true),
+  ('projects', 'projects', true),
+  ('reports', 'reports', true),
+  ('attachments', 'attachments', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Enable Row Level Security (RLS) on storage.objects to apply policies
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing generic storage policies to avoid conflict
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Upload" ON storage.objects;
+DROP POLICY IF EXISTS "Public Update" ON storage.objects;
+DROP POLICY IF EXISTS "Public Delete" ON storage.objects;
+
+-- Create ultra-reliable storage policies allowing unrestricted read & write for app uploads
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT TO public USING (true);
+CREATE POLICY "Public Upload" ON storage.objects FOR INSERT TO public WITH CHECK (true);
+CREATE POLICY "Public Update" ON storage.objects FOR UPDATE TO public USING (true);
+CREATE POLICY "Public Delete" ON storage.objects FOR DELETE TO public USING (true);
+

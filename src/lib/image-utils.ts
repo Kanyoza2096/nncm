@@ -37,35 +37,70 @@ export const compressImage = async (file: File): Promise<File> => {
 
 /**
  * Resolves a complete, absolute URL for any image path stored in the database.
- * Prepends the AwardSpace base uploads URL for all locally stored files.
+ * Prepends the AwardSpace base uploads URL for all legacy files, 
+ * and handles Supabase storage relative or absolute paths dynamically.
  */
 export const getImageUrl = (path: string | null | undefined): string => {
   if (!path) return '';
   
   const legacyUploadsUrl = 'https://nncm-church.mywebcommunity.org/uploads';
 
-  // If it's already an absolute URL (Supabase Storage URLs are stored as absolute), or a data URI
-  if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('blob:')) {
+  // Retrieve active Supabase URL from Vite env variables, falling back to user's known active container URL
+  const supabaseUrlEnv = import.meta.env.VITE_SUPABASE_URL;
+  const baseSupabaseUrl = (supabaseUrlEnv && !supabaseUrlEnv.includes('placeholder') && !supabaseUrlEnv.includes('placeholder.supabase.co'))
+    ? supabaseUrlEnv.replace(/\/$/, '')
+    : 'https://iacefkmaacznavqjkelj.supabase.co';
+
+  const cleanPath = path.trim();
+
+  // If it's already an absolute URL or a data URI or a blob, handle potential proxies and return
+  if (cleanPath.startsWith('http') || cleanPath.startsWith('data:') || cleanPath.startsWith('blob:')) {
     // If it was trying to use the local proxy pattern, remove it
-    if (path.includes('/api/nncm/files/serve?path=')) {
-        const rawPath = path.split('?path=')[1];
+    if (cleanPath.includes('/api/nncm/files/serve?path=')) {
+        const rawPath = cleanPath.split('?path=')[1];
         if (rawPath) {
            return `${legacyUploadsUrl}/${rawPath}`;
         }
     }
-    return path;
+    return cleanPath;
   }
   
   // If it's the relative proxy pattern mapping
-  if (path.startsWith('/api/nncm/files/serve')) {
-     const rawPath = path.split('?path=')[1];
+  if (cleanPath.startsWith('/api/nncm/files/serve')) {
+     const rawPath = cleanPath.split('?path=')[1];
      if (rawPath) {
         return `${legacyUploadsUrl}/${rawPath}`;
      }
   }
+
+  // Check if it's a relative path belonging to Supabase storage (e.g. contains bucket names or 'storage/' keyword)
+  const isSupabasePath = 
+    cleanPath.startsWith('attachments/') || 
+    cleanPath.startsWith('logos/') || 
+    cleanPath.startsWith('avatars/') || 
+    cleanPath.startsWith('projects/') || 
+    cleanPath.startsWith('reports/') ||
+    cleanPath.includes('storage/v1/') ||
+    cleanPath.startsWith('gallery/');
+
+  if (isSupabasePath) {
+    const strippedPath = cleanPath.replace(/^\//, '');
+    
+    // If the path contains the full storage prefix already, prefix it with the base host
+    if (strippedPath.includes('storage/v1/object/public/')) {
+      const remaining = strippedPath.split('storage/v1/object/public/')[1];
+      return `${baseSupabaseUrl}/storage/v1/object/public/${remaining}`;
+    }
+    
+    // If it is inside attachments/gallery or gallery/ folder
+    if (strippedPath.startsWith('gallery/')) {
+      return `${baseSupabaseUrl}/storage/v1/object/public/attachments/${strippedPath}`;
+    }
+
+    return `${baseSupabaseUrl}/storage/v1/object/public/${strippedPath}`;
+  }
   
-  // Any remaining relative paths should fall back to the AwardSpace legacy host, 
-  // since new Supabase uploads store absolute public URLs
-  const cleanPath = path.replace(/^\//, '');
-  return `${legacyUploadsUrl}/${cleanPath}`;
+  // Any remaining generic relative paths fall back to the AwardSpace legacy host
+  const strippedRelative = cleanPath.replace(/^\//, '');
+  return `${legacyUploadsUrl}/${strippedRelative}`;
 };

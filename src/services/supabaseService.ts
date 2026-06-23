@@ -813,6 +813,71 @@ export const supabaseService = {
     gallery: {
       getAll: async (): Promise<any[]> => {
         const candidateTables = ['gallery', 'nncm_gallery', 'gallery_images'];
+        
+        // Proactive sync logic: auto-discover physical photos physically uploaded to Supabase Storage and register them in database
+        try {
+          const { data: storageFiles, error: storageError } = await supabase
+            .storage
+            .from('attachments')
+            .list('gallery', { limit: 100 });
+
+          if (!storageError && storageFiles && storageFiles.length > 0) {
+            let activeTable = 'gallery';
+            for (const table of candidateTables) {
+              try {
+                const { error: testErr } = await supabase.from(table).select('id').limit(1);
+                if (!testErr) {
+                  activeTable = table;
+                  break;
+                }
+              } catch (_) {}
+            }
+
+            const { data: existingRows } = await supabase.from(activeTable).select('url');
+            const existingUrls = (existingRows || []).map(row => (row.url || '').toLowerCase());
+
+            const pendingInserts = [];
+            for (const file of storageFiles) {
+              if (file.name === '.emptyFolderPlaceholder' || file.name.startsWith('.')) continue;
+
+              const relativePath = `attachments/gallery/${file.name}`;
+              const isDuplicated = existingUrls.some(url => 
+                url.includes(file.name.toLowerCase()) || url.includes(relativePath.toLowerCase())
+              );
+
+              if (!isDuplicated) {
+                const cleanTitle = file.name
+                  .replace(/\.[^/.]+$/, "") 
+                  .replace(/_\d+$/, "")     
+                  .replace(/[-_]/g, " ")    
+                  .split(" ")
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(" ")
+                  .trim() || 'Gallery Image';
+
+                pendingInserts.push({
+                  id: generateUUID(),
+                  title: cleanTitle,
+                  description: 'Automatically synchronized from storage',
+                  url: relativePath,
+                  category: 'Sunday Service',
+                  created_at: file.created_at || new Date().toISOString()
+                });
+              }
+            }
+
+            if (pendingInserts.length > 0) {
+              console.log(`[Supabase Bridge] Auto-syncing ${pendingInserts.length} items from attachments/gallery folder into active table: ${activeTable}`);
+              const { error: insertErr } = await supabase.from(activeTable).insert(pendingInserts);
+              if (insertErr) {
+                console.error('[Supabase Bridge] Failed to insert auto-sync records:', insertErr);
+              }
+            }
+          }
+        } catch (syncErr) {
+          console.warn('[Supabase Bridge] Auto-sync skipped or failed:', syncErr);
+        }
+
         let lastError = null;
         for (const table of candidateTables) {
           try {

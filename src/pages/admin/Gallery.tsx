@@ -49,6 +49,7 @@ interface PendingImage {
 
 export default function AdminGallery() {
   const [images, setImages] = useState<GalleryImage[]>([]);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -432,33 +433,23 @@ export default function AdminGallery() {
                   className="group relative bg-slate-50 dark:bg-slate-950/40 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300"
                 >
                   <div className="aspect-video relative overflow-hidden bg-slate-200 dark:bg-slate-900">
-                    <img 
-                      src={getImageUrl(img.url)} 
-                      alt={img.title} 
-                      className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-300"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        console.error('Admin Gallery image failed to load:', {
-                          originalUrl: img.url,
-                          resolvedUrl: getImageUrl(img.url),
-                          errorEvent: e
-                        });
-                        
-                        // Show visible error in place of the image
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          const debugDiv = document.createElement('div');
-                          debugDiv.className = 'absolute inset-0 flex flex-col items-center justify-center bg-red-50 dark:bg-red-950/20 p-2 text-center border border-red-200 dark:border-red-900 overflow-y-auto block z-50';
-                          debugDiv.innerHTML = `
-                            <span class="text-red-600 dark:text-red-400 font-bold mb-1 text-xs">Image Error</span>
-                            <span class="text-[10px] text-red-500 break-all leading-tight">URL: ${getImageUrl(img.url)}</span>
-                          `;
-                          parent.appendChild(debugDiv);
-                        }
-                      }}
-                    />
+                    {failedImages[img.id] ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900/60 text-slate-400 p-4 text-center">
+                        <Camera className="w-8 h-8 mb-2 stroke-1 text-indigo-500/80 dark:text-indigo-400/80" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Image offline</span>
+                        <span className="text-[9px] text-slate-400 break-all leading-tight mt-1 truncate max-w-full px-2" title={img.url}>{img.title}</span>
+                      </div>
+                    ) : (
+                      <img 
+                        src={getImageUrl(img.url)} 
+                        alt={img.title} 
+                        className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-300"
+                        referrerPolicy="no-referrer"
+                        onError={() => {
+                          setFailedImages(prev => ({ ...prev, [img.id]: true }));
+                        }}
+                      />
+                    )}
                     <div className="absolute top-3 left-3 px-2.5 py-0.5 bg-indigo-600/90 dark:bg-indigo-900/90 rounded-md text-[9px] font-black uppercase text-white tracking-widest">
                       {img.category || 'Sunday Service'}
                     </div>

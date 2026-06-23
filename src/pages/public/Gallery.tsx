@@ -27,6 +27,7 @@ export default function Gallery() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     async function loadGallery() {
@@ -180,35 +181,24 @@ export default function Gallery() {
                 >
                   {/* Image wrapper */}
                   <div className="relative aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-950">
-                    <img 
-                      src={getImageUrl(image.url)} 
-                      alt={image.title} 
-                      className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        console.error('Gallery image failed to load:', {
-                          originalUrl: image.url,
-                          resolvedUrl: getImageUrl(image.url),
-                          errorEvent: e
-                        });
-                        
-                        // Show visible error in place of the image
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          const debugDiv = document.createElement('div');
-                          debugDiv.className = 'absolute inset-0 flex flex-col items-center justify-center bg-red-50 dark:bg-red-950/20 p-2 text-center border border-red-200 dark:border-red-900 overflow-y-auto';
-                          debugDiv.innerHTML = `
-                            <span class="text-red-600 dark:text-red-400 font-bold mb-1">Image Load Error</span>
-                            <span class="text-xs text-red-500 dark:text-red-500/80 break-all">Original: ${image.url}</span>
-                            <span class="text-xs text-red-500 dark:text-red-500/80 break-all mt-1">Resolved: ${getImageUrl(image.url)}</span>
-                          `;
-                          parent.appendChild(debugDiv);
-                        }
-                      }}
-                    />
+                    {failedImages[image.id] ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900/60 text-slate-400 p-4 text-center">
+                        <Camera className="w-8 h-8 mb-2 stroke-1 text-indigo-500/80 dark:text-indigo-400/80" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Image offline</span>
+                        <span className="text-[9px] text-slate-400 break-all leading-tight mt-1 truncate max-w-full px-2" title={image.url}>{image.title}</span>
+                      </div>
+                    ) : (
+                      <img 
+                        src={getImageUrl(image.url)} 
+                        alt={image.title} 
+                        className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={() => {
+                          setFailedImages(prev => ({ ...prev, [image.id]: true }));
+                        }}
+                      />
+                    )}
                     {/* Hover mask */}
                     <div className="absolute inset-0 bg-indigo-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                       <button
