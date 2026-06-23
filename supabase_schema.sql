@@ -180,6 +180,50 @@ CREATE TABLE IF NOT EXISTS public.reports (
 );
 
 
+-- 12. Create Gallery Table
+CREATE TABLE IF NOT EXISTS public.gallery (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    url TEXT NOT NULL,
+    category TEXT DEFAULT 'Sunday Service',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- 13. Create Sermons Table
+CREATE TABLE IF NOT EXISTS public.sermons (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    pastor TEXT NOT NULL,
+    category TEXT NOT NULL,
+    date TEXT NOT NULL,
+    video_url TEXT,
+    audio_url TEXT,
+    notes TEXT,
+    excerpt TEXT,
+    cover_image TEXT,
+    downloads_count INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- 14. Create Events Table
+CREATE TABLE IF NOT EXISTS public.events (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    category TEXT NOT NULL,
+    date TEXT NOT NULL,
+    time TEXT NOT NULL,
+    location TEXT NOT NULL,
+    registration_open BOOLEAN DEFAULT TRUE,
+    registered_count INT DEFAULT 0,
+    image TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
 -- ==========================================
 -- DISABLE ROW LEVEL SECURITY (RLS) FOR FREE FLOW AND TO FIX PERMISSION ERRORS 
 -- This completely resolves "permission denied for table" errors in development setup.
@@ -196,6 +240,9 @@ ALTER TABLE IF EXISTS public.blog_posts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.testimonials DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.reports DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.gallery DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.sermons DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.events DISABLE ROW LEVEL SECURITY;
 
 
 -- ==========================================

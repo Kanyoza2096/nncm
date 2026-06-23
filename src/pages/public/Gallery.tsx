@@ -4,6 +4,7 @@ import { useOrgSettings } from '../../hooks/useOrgSettings';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
 import { churchService } from '../../services/churchService';
 import { GalleryImage } from '../../types';
+import { getImageUrl } from '../../lib/image-utils';
 import { 
   Camera, 
   X, 
@@ -180,11 +181,33 @@ export default function Gallery() {
                   {/* Image wrapper */}
                   <div className="relative aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-950">
                     <img 
-                      src={image.url} 
+                      src={getImageUrl(image.url)} 
                       alt={image.title} 
                       className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        console.error('Gallery image failed to load:', {
+                          originalUrl: image.url,
+                          resolvedUrl: getImageUrl(image.url),
+                          errorEvent: e
+                        });
+                        
+                        // Show visible error in place of the image
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const debugDiv = document.createElement('div');
+                          debugDiv.className = 'absolute inset-0 flex flex-col items-center justify-center bg-red-50 dark:bg-red-950/20 p-2 text-center border border-red-200 dark:border-red-900 overflow-y-auto';
+                          debugDiv.innerHTML = `
+                            <span class="text-red-600 dark:text-red-400 font-bold mb-1">Image Load Error</span>
+                            <span class="text-xs text-red-500 dark:text-red-500/80 break-all">Original: ${image.url}</span>
+                            <span class="text-xs text-red-500 dark:text-red-500/80 break-all mt-1">Resolved: ${getImageUrl(image.url)}</span>
+                          `;
+                          parent.appendChild(debugDiv);
+                        }
+                      }}
                     />
                     {/* Hover mask */}
                     <div className="absolute inset-0 bg-indigo-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -272,7 +295,7 @@ export default function Gallery() {
                 className="max-h-[72vh] max-w-[85vw] flex items-center justify-center select-none"
               >
                 <img 
-                  src={filteredImages[lightboxIndex].url} 
+                  src={getImageUrl(filteredImages[lightboxIndex].url)} 
                   alt={filteredImages[lightboxIndex].title} 
                   className="max-h-[72vh] max-w-[85vw] object-contain rounded-xl shadow-2xl"
                   referrerPolicy="no-referrer"

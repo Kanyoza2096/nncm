@@ -69,6 +69,12 @@ const camelToSnakeMap: Record<string, string> = {
   twitterUrl: 'twitter_url',
   youtubeUrl: 'youtube_url',
   instagramUrl: 'instagram_url',
+  videoUrl: 'video_url',
+  audioUrl: 'audio_url',
+  downloadsCount: 'downloads_count',
+  coverImage: 'cover_image',
+  registrationOpen: 'registration_open',
+  registeredCount: 'registered_count',
 };
 
 const snakeToCamelMap: Record<string, string> = {
@@ -699,7 +705,20 @@ export const supabaseService = {
         const { data: existing } = await supabase.from('settings').select('id').limit(1).maybeSingle();
         const idToUse = existing?.id || 1;
         
-        const { error } = await supabase.from('settings').upsert({ id: idToUse, ...toDB(dbSettings), updated_at: new Date().toISOString() });
+        let payload = toDB(dbSettings);
+        let { error } = await supabase.from('settings').upsert({ id: idToUse, ...payload, updated_at: new Date().toISOString() });
+        
+        // Fallback if the Supabase database schema hasn't been updated with the newest columns
+        if (error && error.message?.includes('schema cache')) {
+           console.warn('[Settings Supabase Sync] Schema cache error detected, retrying without new columns...', error);
+           const missingCols = ['facebook_url', 'twitter_url', 'instagram_url', 'youtube_url', 'vision', 'mission', 'motto'];
+           missingCols.forEach(col => delete payload[col]);
+           const fallbackResp = await supabase.from('settings').upsert({ id: idToUse, ...payload, updated_at: new Date().toISOString() });
+           error = fallbackResp.error;
+           if (!error) {
+              toast.info("Settings saved, but some new fields failed. Please run the SQL schema update in your Supabase dashboard to support the new fields.", { duration: 8000 });
+           }
+        }
         
         if (error) {
           console.error('[Settings Supabase Sync] Supabase update failed:', error);
@@ -786,6 +805,251 @@ export const supabaseService = {
     deleteUserProfile: async (id: string): Promise<void> => {
       const { error } = await supabase.from('users').delete().eq('id', id);
       if (error) { logError("Database operation error", error); throw error; }
+    }
+  },
+  
+  // 11. Custom church integration module
+  church: {
+    gallery: {
+      getAll: async (): Promise<any[]> => {
+        const candidateTables = ['gallery', 'nncm_gallery', 'gallery_images'];
+        let lastError = null;
+        for (const table of candidateTables) {
+          try {
+            const { data, error } = await supabase.from(table).select('*');
+            if (!error && data) {
+              return data.map(item => ({
+                id: item.id || String(item.created_at || Math.random()),
+                title: item.title || 'Untitled Image',
+                description: item.description || '',
+                url: item.url || item.image_url || '',
+                category: item.category || 'Sunday Service',
+                createdAt: typeof item.created_at === 'number' ? item.created_at : 
+                           item.created_at ? new Date(item.created_at).getTime() : Date.now()
+              }));
+            }
+            if (error && error.code !== '42P01') {
+              lastError = error;
+            }
+          } catch (e) {
+            console.error(`[Supabase Bridge] Failed reading from ${table}:`, e);
+          }
+        }
+        if (lastError) {
+          console.error('[Supabase Bridge] Gallery fetch error:', lastError);
+        }
+        throw new Error('Gallery table not accessible in Supabase');
+      },
+      create: async (img: any): Promise<string> => {
+        const id = generateId();
+        const candidateTables = ['gallery', 'nncm_gallery', 'gallery_images'];
+        for (const table of candidateTables) {
+          try {
+            const payload = {
+              id,
+              title: img.title,
+              description: img.description || '',
+              url: img.url,
+              category: img.category || 'Sunday Service',
+              created_at: new Date().toISOString()
+            };
+            const { error } = await supabase.from(table).insert([payload]);
+            if (!error) return id;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Insert failed into ${table}:`, e);
+          }
+        }
+        throw new Error('No writable gallery table found in Supabase');
+      },
+      delete: async (id: string): Promise<void> => {
+        const candidateTables = ['gallery', 'nncm_gallery', 'gallery_images'];
+        for (const table of candidateTables) {
+          try {
+            const { error } = await supabase.from(table).delete().eq('id', id);
+            if (!error) return;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Delete failed on ${table}:`, e);
+          }
+        }
+        throw new Error('No accessible gallery table found in Supabase to delete from');
+      }
+    },
+    sermons: {
+      getAll: async (): Promise<any[]> => {
+        const candidateTables = ['sermons', 'nncm_sermons'];
+        let lastError = null;
+        for (const table of candidateTables) {
+          try {
+            const { data, error } = await supabase.from(table).select('*');
+            if (!error && data) {
+              return data.map(item => {
+                const mapped = fromDB(item);
+                return {
+                  ...mapped,
+                  downloadsCount: Number(item.downloads_count) || 0
+                };
+              });
+            }
+            if (error && error.code !== '42P01') {
+              lastError = error;
+            }
+          } catch (e) {
+            console.error(`[Supabase Bridge] Failed reading from ${table}:`, e);
+          }
+        }
+        if (lastError) {
+          console.error('[Supabase Bridge] Sermons fetch error:', lastError);
+        }
+        throw new Error('Sermons table not accessible in Supabase');
+      },
+      create: async (sermon: any): Promise<string> => {
+        const id = 'serm-' + Math.random().toString(36).substring(2, 11);
+        const candidateTables = ['sermons', 'nncm_sermons'];
+        for (const table of candidateTables) {
+          try {
+            const payload = toDB({
+              id,
+              ...sermon,
+              downloadsCount: 0,
+              createdAt: Date.now()
+            });
+            const { error } = await supabase.from(table).insert([payload]);
+            if (!error) return id;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Sermon creation failed in ${table}:`, e);
+          }
+        }
+        throw new Error('No writable sermons table found in Supabase');
+      },
+      update: async (id: string, updates: any): Promise<void> => {
+        const candidateTables = ['sermons', 'nncm_sermons'];
+        for (const table of candidateTables) {
+          try {
+            const payload = toDB(updates);
+            const { error } = await supabase.from(table).update(payload).eq('id', id);
+            if (!error) return;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Sermon update failed in ${table}:`, e);
+          }
+        }
+        throw new Error('No writable sermons table found in Supabase to update');
+      },
+      delete: async (id: string): Promise<void> => {
+        const candidateTables = ['sermons', 'nncm_sermons'];
+        for (const table of candidateTables) {
+          try {
+            const { error } = await supabase.from(table).delete().eq('id', id);
+            if (!error) return;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Sermon deletion failed in ${table}:`, e);
+          }
+        }
+        throw new Error('No writable sermons table found in Supabase to delete from');
+      },
+      incrementDownload: async (id: string): Promise<void> => {
+        const candidateTables = ['sermons', 'nncm_sermons'];
+        for (const table of candidateTables) {
+          try {
+            const { data, error: selectErr } = await supabase.from(table).select('downloads_count').eq('id', id).single();
+            if (!selectErr && data) {
+              const current = Number(data.downloads_count) || 0;
+              const { error: updateErr } = await supabase.from(table).update({ downloads_count: current + 1 }).eq('id', id);
+              if (!updateErr) return;
+            }
+          } catch (e) {
+            console.error(`[Supabase Bridge] Downloads increment failed in ${table}:`, e);
+          }
+        }
+      }
+    },
+    events: {
+      getAll: async (): Promise<any[]> => {
+        const candidateTables = ['events', 'nncm_events', 'church_events'];
+        let lastError = null;
+        for (const table of candidateTables) {
+          try {
+            const { data, error } = await supabase.from(table).select('*');
+            if (!error && data) {
+              return data.map(item => {
+                const mapped = fromDB(item);
+                return {
+                  ...mapped,
+                  registeredCount: Number(item.registered_count) || 0,
+                  registrationOpen: Boolean(item.registration_open)
+                };
+              });
+            }
+            if (error && error.code !== '42P01') {
+              lastError = error;
+            }
+          } catch (e) {
+            console.error(`[Supabase Bridge] Failed reading from ${table}:`, e);
+          }
+        }
+        if (lastError) {
+          console.error('[Supabase Bridge] Events fetch error:', lastError);
+        }
+        throw new Error('Events table not accessible in Supabase');
+      },
+      create: async (evt: any): Promise<string> => {
+        const id = 'evt-' + Math.random().toString(36).substring(2, 11);
+        const candidateTables = ['events', 'nncm_events', 'church_events'];
+        for (const table of candidateTables) {
+          try {
+            const payload = toDB({
+              id,
+              ...evt,
+              registeredCount: 0,
+              createdAt: Date.now()
+            });
+            const { error } = await supabase.from(table).insert([payload]);
+            if (!error) return id;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Event creation failed in ${table}:`, e);
+          }
+        }
+        throw new Error('No writable events table found in Supabase');
+      },
+      update: async (id: string, updates: any): Promise<void> => {
+        const candidateTables = ['events', 'nncm_events', 'church_events'];
+        for (const table of candidateTables) {
+          try {
+            const payload = toDB(updates);
+            const { error } = await supabase.from(table).update(payload).eq('id', id);
+            if (!error) return;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Event update failed in ${table}:`, e);
+          }
+        }
+        throw new Error('No writable events table found in Supabase to update');
+      },
+      delete: async (id: string): Promise<void> => {
+        const candidateTables = ['events', 'nncm_events', 'church_events'];
+        for (const table of candidateTables) {
+          try {
+            const { error } = await supabase.from(table).delete().eq('id', id);
+            if (!error) return;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Event deletion failed in ${table}:`, e);
+          }
+        }
+        throw new Error('No writable events table found in Supabase to delete from');
+      },
+      register: async (id: string): Promise<void> => {
+        const candidateTables = ['events', 'nncm_events', 'church_events'];
+        for (const table of candidateTables) {
+          try {
+            const { data, error: selectErr } = await supabase.from(table).select('registered_count').eq('id', id).single();
+            if (!selectErr && data) {
+              const current = Number(data.registered_count) || 0;
+              const { error: updateErr } = await supabase.from(table).update({ registered_count: current + 1 }).eq('id', id);
+              if (!updateErr) return;
+            }
+          } catch (e) {
+            console.error(`[Supabase Bridge] Event registration failed in ${table}:`, e);
+          }
+        }
+      }
     }
   }
 };

@@ -42,27 +42,30 @@ export const compressImage = async (file: File): Promise<File> => {
 export const getImageUrl = (path: string | null | undefined): string => {
   if (!path) return '';
   
-  const baseServeUrl = '/api/nncm/files/serve';
   const legacyUploadsUrl = 'https://nncm-church.mywebcommunity.org/uploads';
 
-  // If it's a legacy uploads URL, convert it to the serve endpoint
-  if (path.startsWith(legacyUploadsUrl)) {
-    const rawPath = path.replace(legacyUploadsUrl, '').replace(/^\//, '');
-    return `${baseServeUrl}?path=${rawPath}`;
-  }
-  
-  // If it's already using the local serve endpoint or starts with the local api pattern, keep it
-  if (path.startsWith(baseServeUrl) || path.startsWith('/api/nncm')) {
-    return path;
-  }
-  
-  // If it's an absolute third-party URL (but not legacy uploads), return it
+  // If it's already an absolute URL (Supabase Storage URLs are stored as absolute), or a data URI
   if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('blob:')) {
+    // If it was trying to use the local proxy pattern, remove it
+    if (path.includes('/api/nncm/files/serve?path=')) {
+        const rawPath = path.split('?path=')[1];
+        if (rawPath) {
+           return `${legacyUploadsUrl}/${rawPath}`;
+        }
+    }
     return path;
   }
   
-  // Clean up the path (remove leading slashes)
-  const cleanPath = path.replace(/^\//, '');
+  // If it's the relative proxy pattern mapping
+  if (path.startsWith('/api/nncm/files/serve')) {
+     const rawPath = path.split('?path=')[1];
+     if (rawPath) {
+        return `${legacyUploadsUrl}/${rawPath}`;
+     }
+  }
   
-  return `${baseServeUrl}?path=${cleanPath}`;
+  // Any remaining relative paths should fall back to the AwardSpace legacy host, 
+  // since new Supabase uploads store absolute public URLs
+  const cleanPath = path.replace(/^\//, '');
+  return `${legacyUploadsUrl}/${cleanPath}`;
 };

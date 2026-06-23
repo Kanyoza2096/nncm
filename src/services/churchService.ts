@@ -10,6 +10,8 @@ import {
   AttendanceCheckIn,
   GalleryImage
 } from '../types';
+import { shouldUseSupabase } from '../lib/supabase';
+import { supabaseService } from './supabaseService';
 
 const KEYS = {
   SERMONS: 'nncm_sermons',
@@ -358,12 +360,37 @@ function saveList<T>(key: string, data: T[]): void {
 export const churchService = {
   // 1. Sermons
   sermons: {
-    getAll: async (): Promise<Sermon[]> => getList(KEYS.SERMONS, initialSermons),
+    getAll: async (): Promise<Sermon[]> => {
+      if (shouldUseSupabase()) {
+        try {
+          console.log('[Supabase Bridge] Fetching sermons...');
+          return await supabaseService.church.sermons.getAll();
+        } catch (e) {
+          console.warn('[Supabase Bridge] Fallback to local storage for sermons:', e);
+        }
+      }
+      return getList(KEYS.SERMONS, initialSermons);
+    },
     getById: async (id: string): Promise<Sermon | null> => {
+      if (shouldUseSupabase()) {
+        try {
+          const list = await supabaseService.church.sermons.getAll();
+          return list.find(s => s.id === id) || null;
+        } catch (e) {
+          console.warn('[Supabase Bridge] Fallback to local storage for getById:', e);
+        }
+      }
       const list = getList(KEYS.SERMONS, initialSermons);
       return list.find(s => s.id === id) || null;
     },
     create: async (sermon: Omit<Sermon, 'id' | 'downloadsCount'>): Promise<string> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.sermons.create(sermon);
+        } catch (e) {
+          console.error('[Supabase Bridge] Creating sermon failed, trying local storage:', e);
+        }
+      }
       const list = getList(KEYS.SERMONS, initialSermons);
       const id = 'serm-' + Math.random().toString(36).substring(2, 11);
       const newItem: Sermon = { ...sermon, id, downloadsCount: 0 };
@@ -372,6 +399,13 @@ export const churchService = {
       return id;
     },
     update: async (id: string, updates: Partial<Sermon>): Promise<void> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.sermons.update(id, updates);
+        } catch (e) {
+          console.error('[Supabase Bridge] Updating sermon failed, trying local storage:', e);
+        }
+      }
       const list = getList(KEYS.SERMONS, initialSermons);
       const idx = list.findIndex(s => s.id === id);
       if (idx !== -1) {
@@ -380,11 +414,25 @@ export const churchService = {
       }
     },
     delete: async (id: string): Promise<void> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.sermons.delete(id);
+        } catch (e) {
+          console.error('[Supabase Bridge] Deleting sermon failed, trying local storage:', e);
+        }
+      }
       const list = getList(KEYS.SERMONS, initialSermons);
       const filtered = list.filter(s => s.id !== id);
       saveList(KEYS.SERMONS, filtered);
     },
     incrementDownload: async (id: string): Promise<void> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.sermons.incrementDownload(id);
+        } catch (e) {
+          console.warn('[Supabase Bridge] sermon download increment fallback:', e);
+        }
+      }
       const list = getList(KEYS.SERMONS, initialSermons);
       const idx = list.findIndex(s => s.id === id);
       if (idx !== -1) {
@@ -396,8 +444,25 @@ export const churchService = {
 
   // 2. Events
   events: {
-    getAll: async (): Promise<ChurchEvent[]> => getList(KEYS.EVENTS, initialEvents),
+    getAll: async (): Promise<ChurchEvent[]> => {
+      if (shouldUseSupabase()) {
+        try {
+          console.log('[Supabase Bridge] Fetching events...');
+          return await supabaseService.church.events.getAll();
+        } catch (e) {
+          console.warn('[Supabase Bridge] Fallback to local storage for events:', e);
+        }
+      }
+      return getList(KEYS.EVENTS, initialEvents);
+    },
     create: async (evt: Omit<ChurchEvent, 'id' | 'registeredCount'>): Promise<string> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.events.create(evt);
+        } catch (e) {
+          console.error('[Supabase Bridge] Event creation in Supabase failed:', e);
+        }
+      }
       const list = getList(KEYS.EVENTS, initialEvents);
       const id = 'evt-' + Math.random().toString(36).substring(2, 11);
       const newItem: ChurchEvent = { ...evt, id, registeredCount: 0 };
@@ -406,6 +471,13 @@ export const churchService = {
       return id;
     },
     update: async (id: string, updates: Partial<ChurchEvent>): Promise<void> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.events.update(id, updates);
+        } catch (e) {
+          console.error('[Supabase Bridge] Event update in Supabase failed:', e);
+        }
+      }
       const list = getList(KEYS.EVENTS, initialEvents);
       const idx = list.findIndex(e => e.id === id);
       if (idx !== -1) {
@@ -414,11 +486,25 @@ export const churchService = {
       }
     },
     delete: async (id: string): Promise<void> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.events.delete(id);
+        } catch (e) {
+          console.error('[Supabase Bridge] Event deletion in Supabase failed:', e);
+        }
+      }
       const list = getList(KEYS.EVENTS, initialEvents);
       const filtered = list.filter(e => e.id !== id);
       saveList(KEYS.EVENTS, filtered);
     },
     register: async (id: string): Promise<void> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.events.register(id);
+        } catch (e) {
+          console.warn('[Supabase Bridge] Event registration fallback:', e);
+        }
+      }
       const list = getList(KEYS.EVENTS, initialEvents);
       const idx = list.findIndex(e => e.id === id);
       if (idx !== -1) {
@@ -586,8 +672,25 @@ export const churchService = {
 
   // 10. Gallery Images
   gallery: {
-    getAll: async (): Promise<GalleryImage[]> => getList(KEYS.GALLERY, initialGallery),
+    getAll: async (): Promise<GalleryImage[]> => {
+      if (shouldUseSupabase()) {
+        try {
+          console.log('[Supabase Bridge] Fetching gallery...');
+          return await supabaseService.church.gallery.getAll();
+        } catch (e) {
+          console.warn('[Supabase Bridge] Fallback to local storage for gallery:', e);
+        }
+      }
+      return getList(KEYS.GALLERY, initialGallery);
+    },
     create: async (img: Omit<GalleryImage, 'id' | 'createdAt'>): Promise<string> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.gallery.create(img);
+        } catch (e) {
+          console.error('[Supabase Bridge] Creating gallery record in Supabase failed, trying local storage:', e);
+        }
+      }
       const list = getList(KEYS.GALLERY, initialGallery);
       const id = 'gal-' + Math.random().toString(36).substring(2, 11);
       const newItem: GalleryImage = {
@@ -600,6 +703,13 @@ export const churchService = {
       return id;
     },
     delete: async (id: string): Promise<void> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.gallery.delete(id);
+        } catch (e) {
+          console.error('[Supabase Bridge] Deleting gallery record in Supabase failed, trying local storage:', e);
+        }
+      }
       const list = getList(KEYS.GALLERY, initialGallery);
       const filtered = list.filter(g => g.id !== id);
       saveList(KEYS.GALLERY, filtered);

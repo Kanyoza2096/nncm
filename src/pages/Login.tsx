@@ -100,16 +100,23 @@ export default function Login() {
         {/* Header Section */}
         <motion.div variants={itemVariants} className="text-center mb-10">
           <Link to="/" className="inline-flex items-center gap-4 group mb-10">
-            <div className="relative">
-              <div className="absolute inset-0 bg-indigo-600 blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
-              <div className="relative w-14 h-14 bg-white dark:bg-indigo-600 rounded-[1.25rem] flex items-center justify-center shadow-2xl shadow-indigo-600/30 group-hover:scale-105 group-hover:rotate-3 transition-all duration-500 overflow-hidden border border-slate-100 dark:border-indigo-500/30">
-                 {settings.orgLogo ? (
-                   <img src={getImageUrl(settings.orgLogo)} alt="Church Logo" className="w-10 h-10 object-contain" referrerPolicy="no-referrer" />
-                 ) : (
-                   <Heart className="w-7 h-7 text-indigo-600 dark:text-white" />
-                 )}
+            {settings.orgLogo ? (
+              <div className="relative flex items-center justify-center">
+                <img 
+                  src={getImageUrl(settings.orgLogo)} 
+                  alt={settings.orgName} 
+                  className="h-16 w-auto max-w-[220px] object-contain rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-1 shadow-md transition-transform group-hover:scale-105" 
+                  referrerPolicy="no-referrer" 
+                />
               </div>
-            </div>
+            ) : (
+              <div className="relative">
+                <div className="absolute inset-0 bg-indigo-600 blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
+                <div className="relative w-14 h-14 bg-white dark:bg-indigo-600 rounded-[1.25rem] flex items-center justify-center shadow-2xl shadow-indigo-600/30 group-hover:scale-105 group-hover:rotate-3 transition-all duration-500 overflow-hidden border border-slate-100 dark:border-indigo-500/30">
+                  <Heart className="w-7 h-7 text-indigo-600 dark:text-white" />
+                </div>
+              </div>
+            )}
             <div className="text-left">
                <h1 className="text-2xl font-black text-slate-900 dark:text-white leading-none tracking-tight font-display">{settings.orgName || 'NNCM Portal'}</h1>
                <div className="flex items-center gap-2 mt-2">
