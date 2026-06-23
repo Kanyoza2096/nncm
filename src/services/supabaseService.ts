@@ -814,14 +814,45 @@ export const supabaseService = {
       getAll: async (): Promise<any[]> => {
         const candidateTables = ['gallery', 'nncm_gallery', 'gallery_images'];
         
-        // Proactive sync logic: auto-discover physical photos physically uploaded to Supabase Storage and register them in database
+        // 1. Live Storage File-Discovery (Pre-fetch physical files directly from the bucket)
+        let storageImages: any[] = [];
         try {
           const { data: storageFiles, error: storageError } = await supabase
             .storage
             .from('attachments')
-            .list('gallery', { limit: 100 });
+            .list('gallery', { limit: 120 });
 
           if (!storageError && storageFiles && storageFiles.length > 0) {
+            storageImages = storageFiles
+              .filter(file => file.name !== '.emptyFolderPlaceholder' && !file.name.startsWith('.'))
+              .map(file => {
+                const relativePath = `attachments/gallery/${file.name}`;
+                const cleanTitle = file.name
+                  .replace(/\.[^/.]+$/, "") 
+                  .replace(/_\d+$/, "")     
+                  .replace(/[-_]/g, " ")    
+                  .split(" ")
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(" ")
+                  .trim() || 'Gallery Image';
+                
+                return {
+                  id: file.id || `file-${file.name}`,
+                  title: cleanTitle,
+                  description: 'Physically stored in bucket',
+                  url: relativePath,
+                  category: 'Sunday Service',
+                  createdAt: file.created_at ? new Date(file.created_at).getTime() : Date.now()
+                };
+              });
+          }
+        } catch (storageErr) {
+          console.warn('[Supabase Bridge] Storage bucket discovery warning:', storageErr);
+        }
+
+        // Proactive sync logic: write physical storage files into active table as DB rows in background
+        try {
+          if (storageImages.length > 0) {
             let activeTable = 'gallery';
             for (const table of candidateTables) {
               try {
@@ -837,53 +868,41 @@ export const supabaseService = {
             const existingUrls = (existingRows || []).map(row => (row.url || '').toLowerCase());
 
             const pendingInserts = [];
-            for (const file of storageFiles) {
-              if (file.name === '.emptyFolderPlaceholder' || file.name.startsWith('.')) continue;
-
-              const relativePath = `attachments/gallery/${file.name}`;
-              const isDuplicated = existingUrls.some(url => 
-                url.includes(file.name.toLowerCase()) || url.includes(relativePath.toLowerCase())
+            for (const item of storageImages) {
+              const matchesExisting = existingUrls.some(url => 
+                url.includes(item.id.toLowerCase()) || url.includes(item.url.toLowerCase())
               );
 
-              if (!isDuplicated) {
-                const cleanTitle = file.name
-                  .replace(/\.[^/.]+$/, "") 
-                  .replace(/_\d+$/, "")     
-                  .replace(/[-_]/g, " ")    
-                  .split(" ")
-                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ")
-                  .trim() || 'Gallery Image';
-
+              if (!matchesExisting) {
                 pendingInserts.push({
                   id: generateUUID(),
-                  title: cleanTitle,
-                  description: 'Automatically synchronized from storage',
-                  url: relativePath,
-                  category: 'Sunday Service',
-                  created_at: file.created_at || new Date().toISOString()
+                  title: item.title,
+                  description: item.description,
+                  url: item.url,
+                  category: item.category,
+                  created_at: new Date(item.createdAt).toISOString()
                 });
               }
             }
 
             if (pendingInserts.length > 0) {
-              console.log(`[Supabase Bridge] Auto-syncing ${pendingInserts.length} items from attachments/gallery folder into active table: ${activeTable}`);
-              const { error: insertErr } = await supabase.from(activeTable).insert(pendingInserts);
-              if (insertErr) {
-                console.error('[Supabase Bridge] Failed to insert auto-sync records:', insertErr);
-              }
+              console.log(`[Supabase Bridge] Auto-syncing ${pendingInserts.length} items to database...`);
+              await supabase.from(activeTable).insert(pendingInserts);
             }
           }
         } catch (syncErr) {
-          console.warn('[Supabase Bridge] Auto-sync skipped or failed:', syncErr);
+          console.warn('[Supabase Bridge] Auto-sync skipped:', syncErr);
         }
 
-        let lastError = null;
+        // 2. Fetch database rows
+        let dbImages: any[] = [];
+        let anyQuerySucceeded = false;
+        
         for (const table of candidateTables) {
           try {
             const { data, error } = await supabase.from(table).select('*');
             if (!error && data) {
-              return data.map(item => ({
+              dbImages = data.map(item => ({
                 id: item.id || String(item.created_at || Math.random()),
                 title: item.title || 'Untitled Image',
                 description: item.description || '',
@@ -892,18 +911,34 @@ export const supabaseService = {
                 createdAt: typeof item.created_at === 'number' ? item.created_at : 
                            item.created_at ? new Date(item.created_at).getTime() : Date.now()
               }));
-            }
-            if (error && error.code !== '42P01') {
-              lastError = error;
+              anyQuerySucceeded = true;
+              break;
             }
           } catch (e) {
-            console.error(`[Supabase Bridge] Failed reading from ${table}:`, e);
+            console.error(`[Supabase Bridge] Failed reading from table ${table}:`, e);
           }
         }
-        if (lastError) {
-          console.error('[Supabase Bridge] Gallery fetch error:', lastError);
+
+        // 3. Intelligently merge or choose the results
+        if (dbImages.length > 0) {
+          // Merge database rows and append any storage files that aren't registered in the DB
+          const dbUrls = new Set(dbImages.map(item => (item.url || '').toLowerCase()));
+          const missingFromDb = storageImages.filter(item => !dbUrls.has((item.url || '').toLowerCase()));
+          
+          console.log(`[Supabase Bridge] Loaded ${dbImages.length} images from database table, plus ${missingFromDb.length} additional unregistered bucket files.`);
+          return [...dbImages, ...missingFromDb];
         }
-        throw new Error('Gallery table not accessible in Supabase');
+
+        if (storageImages.length > 0) {
+          console.log(`[Supabase Bridge] No row records in database yet. Returning ${storageImages.length} images directly from physical bucket files.`);
+          return storageImages;
+        }
+
+        if (!anyQuerySucceeded) {
+          throw new Error('Gallery table not accessible in Supabase and no storage images returned');
+        }
+
+        return [];
       },
       create: async (img: any): Promise<string> => {
         const id = generateId();

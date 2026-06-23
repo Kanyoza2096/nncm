@@ -678,7 +678,8 @@ export const churchService = {
           console.log('[Supabase Bridge] Fetching gallery...');
           return await supabaseService.church.gallery.getAll();
         } catch (e) {
-          console.warn('[Supabase Bridge] Fallback to local storage for gallery:', e);
+          console.error('[Supabase Bridge] Gallery load failed from Supabase:', e);
+          return []; // Strictly return empty instead of falling back to default/mock lists
         }
       }
       return getList(KEYS.GALLERY, initialGallery);
@@ -688,7 +689,8 @@ export const churchService = {
         try {
           return await supabaseService.church.gallery.create(img);
         } catch (e) {
-          console.error('[Supabase Bridge] Creating gallery record in Supabase failed, trying local storage:', e);
+          console.error('[Supabase Bridge] Creating gallery record in Supabase failed:', e);
+          throw e; // Fail fast rather than writing mock items to local storage
         }
       }
       const list = getList(KEYS.GALLERY, initialGallery);
@@ -707,7 +709,8 @@ export const churchService = {
         try {
           return await supabaseService.church.gallery.delete(id);
         } catch (e) {
-          console.error('[Supabase Bridge] Deleting gallery record in Supabase failed, trying local storage:', e);
+          console.error('[Supabase Bridge] Deleting gallery record in Supabase failed:', e);
+          throw e; // Fail fast rather than performing local mock updates
         }
       }
       const list = getList(KEYS.GALLERY, initialGallery);
