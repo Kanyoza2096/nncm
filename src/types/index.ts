@@ -1,10 +1,11 @@
-export type Role = 'visitor' | 'member' | 'pastor' | 'ministry_leader' | 'finance_officer' | 'admin' | 'super_admin' | 'staff' | 'volunteer';
+export type Role = 'visitor' | 'member' | 'pastor' | 'ministry_leader' | 'finance_officer' | 'admin' | 'super_admin' | 'staff' | 'volunteer' | 'readership' | 'secretary' | 'treasurer' | 'deacon' | 'elder';
 
 export interface User {
   id: string;
   uid?: string; // fallback for some contexts
   name: string;
   email: string;
+  whatsapp?: string;
   role: Role;
   status: 'active' | 'inactive';
   photoURL?: string;

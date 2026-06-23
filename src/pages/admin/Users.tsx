@@ -16,7 +16,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { authService } from '../../services/auth';
-import { User } from '../../types';
+import { User, Role } from '../../types';
+import { generateUUID } from '../../lib/id-utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -25,10 +26,44 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    whatsapp: '',
+    role: 'member' as Role
+  });
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) return;
+    
+    setIsSubmitting(true);
+    try {
+      const id = generateUUID();
+      await authService.createUserProfile(id, {
+        name: formData.name,
+        email: formData.email,
+        whatsapp: formData.whatsapp,
+        role: formData.role,
+        status: 'active',
+        createdAt: Date.now()
+      });
+      
+      toast.success('Agent authorized and profile activated!');
+      setShowInviteForm(false);
+      setFormData({ name: '', email: '', whatsapp: '', role: 'member' });
+      fetchUsers();
+    } catch (err) {
+      toast.error('Failed to authorize agent.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -167,20 +202,69 @@ export default function Users() {
                     </div>
                  </div>
 
-                 <div className="space-y-5">
+                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-1.5">
                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Agent Identity (Official Name)</label>
-                       <input type="text" placeholder="e.g. Samuel Chilwa" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-600 outline-none  dark:text-white" />
+                       <input 
+                         type="text" 
+                         required
+                         value={formData.name}
+                         onChange={e => setFormData({ ...formData, name: e.target.value })}
+                         placeholder="e.g. Samuel Chilwa" 
+                         className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-600 outline-none  dark:text-white" 
+                       />
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Security Email</label>
-                       <input type="email" placeholder="staff@nncm.org" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-600 outline-none dark:text-white" />
+                       <input 
+                         type="email" 
+                         required
+                         value={formData.email}
+                         onChange={e => setFormData({ ...formData, email: e.target.value })}
+                         placeholder="staff@nncm.org" 
+                         className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-600 outline-none dark:text-white" 
+                       />
+                    </div>
+
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">WhatsApp Protocol Number</label>
+                       <input 
+                         type="text" 
+                         value={formData.whatsapp}
+                         onChange={e => setFormData({ ...formData, whatsapp: e.target.value })}
+                         placeholder="+265..." 
+                         className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-600 outline-none dark:text-white" 
+                       />
+                    </div>
+
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Assigned Role & Clearance</label>
+                       <select 
+                         value={formData.role}
+                         onChange={e => setFormData({ ...formData, role: e.target.value as Role })}
+                         className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-600 outline-none dark:text-white appearance-none"
+                       >
+                         <option value="member">Church Member</option>
+                         <option value="pastor">Senior Pastor</option>
+                         <option value="secretary">Ministry Secretary</option>
+                         <option value="treasurer">Ministry Treasurer</option>
+                         <option value="deacon">Deacon / Deaconess</option>
+                         <option value="elder">Church Elder</option>
+                         <option value="readership">Readership Personnel</option>
+                         <option value="volunteer">Volunteer Service</option>
+                         <option value="staff">Official Staff</option>
+                         <option value="admin">System Admin</option>
+                       </select>
                     </div>
                     
-                    <button onClick={() => setShowInviteForm(false)} className="w-full py-4 bg-indigo-600 hover:bg-slate-950 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-indigo-600/30 transition-all active:scale-95">
-                       Submit Authorization
+                    <button 
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-4 bg-indigo-600 hover:bg-slate-950 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                       {isSubmitting ? 'Processing...' : 'Submit Authorization'}
                     </button>
-                 </div>
+                 </form>
               </motion.div>
            </div>
          )}

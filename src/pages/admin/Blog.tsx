@@ -39,7 +39,7 @@ export default function AdminBlog() {
     content: '',
     category: 'Spiritual Announcement',
     authorName: 'Apostle Gabriel',
-    summary: ''
+    excerpt: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,15 +70,14 @@ export default function AdminBlog() {
       await blogService.createBlogPost({
         title: formData.title,
         content: formData.content,
-        summary: formData.summary || formData.content.substring(0, 120) + '...',
+        excerpt: formData.excerpt || formData.content.substring(0, 120) + '...',
         category: formData.category,
-        author: {
-          name: formData.authorName,
-          role: 'Ministry Overseer'
-        },
+        authorName: formData.authorName,
+        authorId: 'admin-broadcast',
         coverImage: 'announcement-banner-default',
         published: true,
-        date: new Date().toLocaleDateString()
+        createdAt: Date.now(),
+        publishedAt: Date.now()
       } as any);
       toast.success('Announcement broadcasted successfully!');
       setShowForm(false);
@@ -87,7 +86,7 @@ export default function AdminBlog() {
         content: '',
         category: 'Spiritual Announcement',
         authorName: 'Apostle Gabriel',
-        summary: ''
+        excerpt: ''
       });
       fetchPosts();
     } catch (err) {
@@ -294,11 +293,11 @@ export default function AdminBlog() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Short Summary</label>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 pl-1">Article Excerpt / Summary</label>
                     <input 
                       type="text" 
-                      value={formData.summary}
-                      onChange={e => setFormData({ ...formData, summary: e.target.value })}
+                      value={formData.excerpt}
+                      onChange={e => setFormData({ ...formData, excerpt: e.target.value })}
                       placeholder="e.g. An encouraging study regarding spiritual stewardship..." 
                       className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-600 transition-all dark:text-white"
                     />

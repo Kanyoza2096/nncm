@@ -10,6 +10,7 @@ import {
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
 import { churchService } from '../../services/churchService';
 import { toast } from 'sonner';
+import { generateUUID } from '../../lib/id-utils';
 
 export default function MemberRegistration() {
   useDocumentMeta({
@@ -26,7 +27,7 @@ export default function MemberRegistration() {
     e.preventDefault();
     setSaving(true);
     setTimeout(async () => {
-      const vid = 'mem_uid_' + Math.random().toString(36).substring(7);
+      const vid = generateUUID();
       await churchService.members.createOrUpdate(vid, { name, email });
       setPass({ vid, name });
       setSaving(false);

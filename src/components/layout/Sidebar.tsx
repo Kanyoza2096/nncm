@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Sparkles,
   BookOpen,
+  BookMarked,
   Calendar,
   Image
 } from 'lucide-react';
@@ -37,6 +38,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Church Members', path: '/admin/beneficiaries', icon: Users },
+    { name: 'Readership Team', path: '/admin/readership', icon: BookMarked },
     { name: 'Sermons Library', path: '/admin/sermons', icon: BookOpen },
     { name: 'Church Events', path: '/admin/events', icon: Calendar },
     { name: 'Givers & Patrons', path: '/admin/donors', icon: HeartHandshake, sensitiveStaff: false, sensitiveVolunteer: true },

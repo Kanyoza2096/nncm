@@ -55,6 +55,7 @@ const AdminTestimonials = lazy(() => import('./pages/admin/Testimonials'));
 const AdminSermons = lazy(() => import('./pages/admin/Sermons'));
 const AdminEvents = lazy(() => import('./pages/admin/Events'));
 const AdminGallery = lazy(() => import('./pages/admin/Gallery'));
+const Readership = lazy(() => import('./pages/admin/Readership'));
 
 const LoadingFallback = () => (
   <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-[#020617]">
@@ -121,6 +122,7 @@ function App() {
                   <Route path="sermons" element={<AdminSermons />} />
                   <Route path="events" element={<AdminEvents />} />
                   <Route path="gallery" element={<AdminGallery />} />
+                  <Route path="readership" element={<Readership />} />
                 </Route>
 
                 {/* Fallback */}

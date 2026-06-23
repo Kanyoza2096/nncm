@@ -87,7 +87,7 @@ export default function NativeFileUpload({
           ) : (
             <Upload className="w-4 h-4" />
           )}
-          <span>{loading ? "Uploading..." : buttonText}</span>
+          <span>{loading ? "Processing..." : buttonText}</span>
         </label>
 
         {showSuccess && (

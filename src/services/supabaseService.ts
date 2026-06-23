@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.ts';
 import { Project, Beneficiary, Donor, Donation, Expense, Volunteer, Settings, BlogPost, Testimonial, User } from '../types';
 import { toast } from 'sonner';
+import { generateUUID } from '../lib/id-utils';
 
 const logError = (context: string, error: any) => {
   console.error(`[Supabase Error] ${context}:`, error);
@@ -12,7 +13,7 @@ const logError = (context: string, error: any) => {
 };
 
 // Helper to generate compliant unique identifiers
-const generateId = () => Math.random().toString(36).substring(2, 11) + Math.random().toString(36).substring(2, 11);
+const generateId = () => generateUUID();
 
 // Field name mappings for camelCase <-> snake_case translation
 const camelToSnakeMap: Record<string, string> = {
@@ -53,6 +54,7 @@ const camelToSnakeMap: Record<string, string> = {
   entityId: 'entity_id',
   uploadedBy: 'uploaded_by',
   uploadedAt: 'uploaded_at',
+  whatsapp: 'whatsapp',
   vision: 'vision',
   mission: 'mission',
   motto: 'motto',
@@ -96,6 +98,7 @@ const snakeToCamelMap: Record<string, string> = {
   read: 'read',
   message: 'message',
   details: 'details',
+  whatsapp: 'whatsapp',
 };
 
 // Populate snakeToCamelMap from camelToSnakeMap while ensuring specificity

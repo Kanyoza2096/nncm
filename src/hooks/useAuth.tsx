@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as AppUser } from '../types';
 import { isSupabaseConfigured, supabase } from '../lib/supabase.ts';
 import { toast } from 'sonner';
+import { generateUUID } from '../lib/id-utils';
 
 interface AuthContextType {
   user: any;
@@ -87,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
               // Fallback: If no profile exists yet (e.g., sandbox developer), auto-create one
               const defaultProfile: AppUser = {
-                id: 'usr_' + Math.random().toString(36).substring(2, 11),
+                id: generateUUID(),
                 name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Authorized Developer',
                 email: session.user.email || '',
                 role: 'admin',
@@ -142,7 +143,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.error('[Supabase Auth Event] Error fetching profile:', error);
           toast.error('Auth Database Error', { description: error.message || error.details });
           // Profile fallback on error to prevent breaking UI
-          const defaultId = 'usr_' + Math.random().toString(36).substring(2, 11);
+          const defaultId = generateUUID();
           setSupabaseProfile({
             id: defaultId,
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Authorized Developer',
@@ -164,7 +165,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           } as AppUser);
         } else {
           // Profile fallback
-          const defaultId = 'usr_' + Math.random().toString(36).substring(2, 11);
+          const defaultId = generateUUID();
           const defaultProfile: AppUser = {
             id: defaultId,
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Authorized Developer',

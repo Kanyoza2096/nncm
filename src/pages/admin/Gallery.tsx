@@ -902,7 +902,7 @@ export default function AdminGallery() {
                     {isUploadingBatch ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Uploading Group...</span>
+                        <span>Processing Group...</span>
                       </>
                     ) : (
                       <>

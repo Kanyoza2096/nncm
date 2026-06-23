@@ -1,4 +1,5 @@
 import { supabase } from './supabase.ts';
+import { compressImage } from './image-utils.ts';
 
 /**
  * Maps a generic folder/bucket string to one of the 5 real Supabase buckets:
@@ -54,9 +55,17 @@ export function getTargetBucketAndPath(folderOrBucket: string, originalFileName:
  */
 export async function uploadFileToSupabase(file: File, bucketOrFolder: string = 'attachments'): Promise<{ url: string; fallback: boolean; errorMsg?: string }> {
   try {
-    const { bucket, filePath } = getTargetBucketAndPath(bucketOrFolder, file.name);
+    // Compress image if it is an image
+    console.log(`[Storage] Processing file: ${file.name}`);
+    const processedFile = await compressImage(file);
+    
+    const { bucket, filePath } = getTargetBucketAndPath(bucketOrFolder, processedFile.name);
+    
+    if (processedFile !== file) {
+      console.log(`[Storage] Image compressed from ${(file.size/1024).toFixed(2)}KB to ${(processedFile.size/1024).toFixed(2)}KB`);
+    }
 
-    console.log(`[Supabase Storage] Attempting upload of file "${file.name}" to resolved bucket "${bucket}" with path "${filePath}"`);
+    console.log(`[Supabase Storage] Attempting upload of processed file to resolved bucket "${bucket}" with path "${filePath}"`);
     
     // First let's check if the client is initialized
     if (!supabase) {
@@ -65,7 +74,7 @@ export async function uploadFileToSupabase(file: File, bucketOrFolder: string = 
 
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(filePath, file, {
+      .upload(filePath, processedFile, {
         cacheControl: '3600',
         upsert: false
       });
