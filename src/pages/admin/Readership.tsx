@@ -10,13 +10,16 @@ import {
   X,
   UserPlus,
   Phone,
-  ShieldCheck
+  ShieldCheck,
+  Camera
 } from 'lucide-react';
 import { authService } from '../../services/auth';
 import { User, Role } from '../../types';
 import { generateUUID } from '../../lib/id-utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import NativeFileUpload from '../../components/NativeFileUpload';
+import { getImageUrl } from '../../lib/image-utils';
 
 export default function Readership() {
   const [members, setMembers] = useState<User[]>([]);
@@ -30,6 +33,7 @@ export default function Readership() {
     email: '',
     whatsapp: '',
     role: 'readership' as Role,
+    photoURL: '',
     status: 'active' as const
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,12 +65,20 @@ export default function Readership() {
     }
     setIsSubmitting(true);
     try {
+      // Check if email already exists in local list
+      if (members.some(m => m.email.toLowerCase() === formData.email.toLowerCase())) {
+        toast.error('A person with this email is already registered in the directory.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const id = generateUUID();
       await authService.createUserProfile(id, {
         name: formData.name,
         email: formData.email,
         whatsapp: formData.whatsapp,
         role: formData.role,
+        photoURL: formData.photoURL || undefined,
         status: formData.status,
         createdAt: Date.now()
       });
@@ -78,11 +90,17 @@ export default function Readership() {
         email: '',
         whatsapp: '',
         role: 'readership',
+        photoURL: '',
         status: 'active'
       });
       fetchMembers();
-    } catch (err) {
-      toast.error('Failed to register member.');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      if (err.code === '23505' || err.message?.includes('duplicate key')) {
+        toast.error('This email is already in use by another member.');
+      } else {
+        toast.error('Failed to register member. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -91,8 +109,9 @@ export default function Readership() {
   const handleDeleteMember = async (id: string) => {
     if (!window.confirm('Are you sure you want to remove this member from the registry?')) return;
     try {
+      await authService.deleteUserProfile(id);
       toast.success('Member removed from registry.');
-      setMembers(prev => prev.filter(m => m.id !== id));
+      fetchMembers();
     } catch (err) {
       toast.error('Failed to remove member.');
     }
@@ -188,7 +207,7 @@ export default function Readership() {
                 <div className="relative mb-4">
                   <div className="w-20 h-20 rounded-full bg-slate-50 dark:bg-slate-800 border-4 border-white dark:border-slate-900 shadow-md flex items-center justify-center text-2xl font-black text-indigo-600 overflow-hidden">
                     {member.photoURL ? (
-                      <img src={member.photoURL} alt={member.name} className="w-full h-full object-cover" />
+                      <img src={getImageUrl(member.photoURL)} alt={member.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                       member.name.split(' ').map(n => n[0]).join('').toUpperCase()
                     )}
@@ -258,6 +277,27 @@ export default function Readership() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex flex-col items-center mb-6 pt-2">
+                   <div className="relative">
+                      <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-slate-50 dark:border-slate-950 shadow-inner flex items-center justify-center overflow-hidden">
+                         {formData.photoURL ? (
+                           <img src={getImageUrl(formData.photoURL)} alt="Preview" className="w-full h-full object-cover" />
+                         ) : (
+                           <Camera className="w-8 h-8 text-slate-300" />
+                         )}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1">
+                         <NativeFileUpload 
+                           onUpload={(url) => setFormData(prev => ({ ...prev, photoURL: url }))}
+                           folder="avatars"
+                           buttonText=" "
+                           acceptTypes="image/*"
+                         />
+                      </div>
+                   </div>
+                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-3">Upload Personnel Photo</p>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Full Name *</label>
                   <input 

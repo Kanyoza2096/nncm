@@ -5,11 +5,18 @@ import { generateUUID } from '../lib/id-utils';
 
 const logError = (context: string, error: any) => {
   console.error(`[Supabase Error] ${context}:`, error);
-  const msg = error?.message || error?.details || JSON.stringify(error);
-  toast.error(`Database Error: ${context}`, {
-    description: msg,
-    duration: 8000,
-  });
+  
+  // Skip generic toast for business logic errors that the UI handles specifically
+  // 23505: Unique violation (e.g. duplicate email)
+  const isHandledError = error?.code === '23505' || (error?.message && error.message.includes('unique constraint'));
+  
+  if (!isHandledError) {
+    const msg = error?.message || error?.details || JSON.stringify(error);
+    toast.error(`Database Error: ${context}`, {
+      description: msg,
+      duration: 8000,
+    });
+  }
 };
 
 // Helper to generate compliant unique identifiers
@@ -775,6 +782,10 @@ export const supabaseService = {
         ...fromDB(u),
         createdAt: Number(u.created_at)
       })) as User[];
+    },
+    deleteUserProfile: async (id: string): Promise<void> => {
+      const { error } = await supabase.from('users').delete().eq('id', id);
+      if (error) { logError("Database operation error", error); throw error; }
     }
   }
 };

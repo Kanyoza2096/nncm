@@ -64,7 +64,7 @@ const defaultSettings: OrgSettings = {
   orgName: 'New Nature In Christ Ministry',
   orgEmail: 'richiefa88@gmail.com',
   orgAbout: 'The church is a Pentecostal church fully relying on the Holy Spirit and His ministration. The purpose of the church is to preach and teach the word of God and make disciples of Jesus Christ who will belong to planted and established self-supporting churches.',
-  orgLogo: '', // Fallback or clear logo reference
+  orgLogo: '/logo.png', // Fallback or clear logo reference
   orgPhone: '+265 882404093',
   orgAddress: 'Zomba, Malawi',
   vision: 'To reach the whole world with the word of Christ Jesus, and systematic preaching and teaching the word of God in the power of the Holy Spirit, and ensuring that our members are living according to God’s original plan.',
@@ -200,7 +200,7 @@ export const OrgSettingsProvider = ({ children }: { children: React.ReactNode })
           orgName: data.orgName || data.organizationName || defaultSettings.orgName,
           orgEmail: data.orgEmail || data.email || defaultSettings.orgEmail,
           orgAbout: decoded.aboutText,
-          orgLogo: data.orgLogo || data.organizationLogo || '',
+          orgLogo: data.orgLogo || data.organizationLogo || defaultSettings.orgLogo,
           orgPhone: data.orgPhone || data.phone || defaultSettings.orgPhone,
           orgAddress: data.orgAddress || data.address || defaultSettings.orgAddress,
           directorName: decoded.directorName,
