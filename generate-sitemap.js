@@ -1,0 +1,68 @@
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env if present
+dotenv.config();
+
+// Use your exposed credentials safely at build time
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://iacefkmaacznavqjkelj.supabase.co';
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhY2Vma21hYWN6bmF2cWprZWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg0NzgsImV4cCI6MjA5NzYxNDQ3OH0.T_Klz3ccS1Z7dPNDNw33NjZMUxdQGC_fZEUJGqb1a0Y';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+async function generate() {
+  // 1. Static public routes from App.tsx
+  const staticRoutes = [
+    '', 'about', 'leadership', 'sermons', 'scriptures', 
+    'events', 'ministries', 'prayer', 'donate', 
+    'register', 'blog', 'contact', 'projects', 'transparency', 'volunteer', 'gallery'
+  ];
+
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+
+  // Append static pages
+  staticRoutes.forEach(route => {
+    const path = route === '' ? '' : `/${route}`;
+    xml += `  <url>\n    <loc>https://nncm.pages.dev${path}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>${route === '' ? '1.0' : '0.8'}</priority>\n  </url>\n`;
+  });
+
+  try {
+    if (supabaseUrl && !supabaseUrl.includes('placeholder')) {
+      // 2. Fetch dynamic blogs from Supabase table
+      const { data: blogs, error: blogsError } = await supabase.from('blogs').select('id');
+      if (!blogsError && blogs) {
+        blogs.forEach(blog => {
+          xml += `  <url>\n    <loc>https://nncm.pages.dev/blog/${blog.id}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+        });
+      } else {
+        console.warn("Could not fetch blogs from Supabase:", blogsError);
+      }
+
+      // 3. Fetch dynamic projects from Supabase table
+      const { data: projects, error: projectsError } = await supabase.from('projects').select('id');
+      if (!projectsError && projects) {
+        projects.forEach(project => {
+          xml += `  <url>\n    <loc>https://nncm.pages.dev/projects/${project.id}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+        });
+      } else {
+        console.warn("Could not fetch projects from Supabase:", projectsError);
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching dynamic data for sitemap:", error);
+  }
+
+  xml += `</urlset>`;
+
+  // Ensure output directory exists
+  if (!fs.existsSync('./dist')) {
+    fs.mkdirSync('./dist', { recursive: true });
+  }
+
+  // Write it straight into your Vite distribution/output folder
+  fs.writeFileSync('./dist/sitemap.xml', xml);
+  console.log("Automated Dynamic Sitemap Generated Successfully at ./dist/sitemap.xml!");
+}
+
+generate();
