@@ -12,8 +12,10 @@ const getOfflineDonors = (): Donor[] => {
     { id: 'donor-1', name: 'Pastor Richie Covenant Partners', email: 'partners@nncm-church.org', phone: '+265882404093', totalDonations: 1500000, createdAt: Date.now(), donorType: 'individual' },
     { id: 'donor-2', name: 'Grace & Mercy Sanctuary Guild', email: 'sanctuary@nncm.org', phone: '+15555550199', totalDonations: 3000000, createdAt: Date.now(), donorType: 'organization' }
   ];
-  localStorage.setItem(OFFLINE_DONORS_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_DONORS_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 const getOfflineDonations = (): Donation[] => {
@@ -23,8 +25,10 @@ const getOfflineDonations = (): Donation[] => {
     { id: 'don-1', donorId: 'donor-1', donorName: 'Pastor Richie Covenant Partners', amount: 1500000, currency: 'MWK', date: Date.now() - 15 * 24 * 3600 * 1000, notes: 'Special pledge tithing submission for the Zomba Sanctuary structural build.' },
     { id: 'don-2', donorId: 'donor-2', donorName: 'Grace & Mercy Sanctuary Guild', amount: 3000000, currency: 'MWK', date: Date.now() - 30 * 24 * 3600 * 1000, notes: 'Mission partner seed offering for Zomba crusade and outreach logistics.' }
   ];
-  localStorage.setItem(OFFLINE_DONATIONS_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_DONATIONS_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 export const donorService = {

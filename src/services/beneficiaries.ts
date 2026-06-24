@@ -11,8 +11,10 @@ const getOfflineBeneficiaries = (): Beneficiary[] => {
     { id: 'ben-1', name: 'Chikondi Phiri', gender: 'female', age: 28, dob: '1998-05-14', phone: '+265888234567', location: 'Chancellor College, Zomba', maritalStatus: 'married', childrenCount: 2, occupation: 'Accountant', status: 'active', createdAt: Date.now() - 30 * 24 * 3600 * 1000 },
     { id: 'ben-2', name: 'Limbani Banda', gender: 'male', age: 34, dob: '1992-09-20', phone: '+265999345678', location: 'Mpondabwino, Zomba', maritalStatus: 'single', childrenCount: 0, occupation: 'High School Teacher', status: 'active', createdAt: Date.now() - 15 * 24 * 3600 * 1000 }
   ];
-  localStorage.setItem(OFFLINE_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 export const beneficiaryService = {

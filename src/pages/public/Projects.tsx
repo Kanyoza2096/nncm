@@ -35,6 +35,14 @@ export default function Projects() {
 
         {loading ? (
           <div className="flex justify-center p-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
+        ) : projects.length === 0 ? (
+          <div className="max-w-md mx-auto py-16 px-6 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
+             <HeartHandshake className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+             <h3 className="font-extrabold text-slate-900 text-lg">No Active Projects</h3>
+             <p className="text-slate-450 text-xs font-light mt-2 leading-relaxed">
+                There are no active kingdom advancement projects listed at the moment. Please check back later!
+             </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {projects.map((p, idx) => {

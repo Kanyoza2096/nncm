@@ -3,14 +3,65 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
+
+const SEO_FILE = path.join(process.cwd(), "seo_settings.json");
+
+interface SeoSettings {
+  title: string;
+  description: string;
+  imageUrl: string;
+  siteName: string;
+}
+
+const defaultSeo: SeoSettings = {
+  title: "New Nature In Christ Ministry (NNCM)",
+  description: "Transforming lives by the power of the Holy Spirit, teaching the uncompromised word of God, and raising a Christ-minded generation in Zomba, Malawi.",
+  imageUrl: "/logo.png",
+  siteName: "NNCM Portal"
+};
+
+function getSeoSettings(): SeoSettings {
+  try {
+    if (fs.existsSync(SEO_FILE)) {
+      const data = fs.readFileSync(SEO_FILE, "utf-8");
+      return { ...defaultSeo, ...JSON.parse(data) };
+    }
+  } catch (err) {
+    console.error("Error reading SEO settings:", err);
+  }
+  return defaultSeo;
+}
+
+function saveSeoSettings(settings: Partial<SeoSettings>) {
+  try {
+    const current = getSeoSettings();
+    const updated = { ...current, ...settings };
+    fs.writeFileSync(SEO_FILE, JSON.stringify(updated, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error saving SEO settings:", err);
+  }
+}
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
+
+  // API Route to fetch SEO settings
+  app.get("/api/seo", (req, res) => {
+    res.json(getSeoSettings());
+  });
+
+  // API Route to update SEO settings
+  app.post("/api/seo", (req, res) => {
+    const { title, description, imageUrl, siteName } = req.body;
+    saveSeoSettings({ title, description, imageUrl, siteName });
+    res.json({ success: true, settings: getSeoSettings() });
+  });
 
   // API route for Gemini chat
   app.post("/api/gemini/chat", async (req, res) => {
@@ -82,7 +133,56 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      try {
+        const indexPath = path.join(distPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          let html = fs.readFileSync(indexPath, 'utf-8');
+          const seo = getSeoSettings();
+          
+          // Escape helper for HTML injection safety
+          const escapeHtml = (str: string) => {
+            return str
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+          };
+
+          const safeTitle = escapeHtml(seo.title);
+          const safeDesc = escapeHtml(seo.description);
+          let safeImg = escapeHtml(seo.imageUrl);
+          const safeSite = escapeHtml(seo.siteName);
+
+          // If the SEO image path is relative (e.g., /logo.png), convert to absolute URL so crawlers can load it
+          if (safeImg.startsWith('/')) {
+            const host = req.headers['x-forwarded-host'] || req.headers.host || 'nncm.pages.dev';
+            const proto = (req.headers['x-forwarded-proto'] as string) || 'https';
+            safeImg = `${proto}://${host}${safeImg}`;
+          }
+
+          // Replace elements in the static HTML file
+          html = html.replace(/<title>.*?<\/title>/gi, `<title>${safeTitle}</title>`);
+          html = html.replace(/<meta name="title" content=".*?" \/>/gi, `<meta name="title" content="${safeTitle}" />`);
+          html = html.replace(/<meta name="description" content=".*?" \/>/gi, `<meta name="description" content="${safeDesc}" />`);
+          
+          html = html.replace(/<meta property="og:title" content=".*?" \/>/gi, `<meta property="og:title" content="${safeTitle}" />`);
+          html = html.replace(/<meta property="og:description" content=".*?" \/>/gi, `<meta property="og:description" content="${safeDesc}" />`);
+          html = html.replace(/<meta property="og:image" content=".*?" \/>/gi, `<meta property="og:image" content="${safeImg}" />`);
+          html = html.replace(/<meta property="og:site_name" content=".*?" \/>/gi, `<meta property="og:site_name" content="${safeSite}" />`);
+          
+          html = html.replace(/<meta property="twitter:title" content=".*?" \/>/gi, `<meta property="twitter:title" content="${safeTitle}" />`);
+          html = html.replace(/<meta property="twitter:description" content=".*?" \/>/gi, `<meta property="twitter:description" content="${safeDesc}" />`);
+          html = html.replace(/<meta property="twitter:image" content=".*?" \/>/gi, `<meta property="twitter:image" content="${safeImg}" />`);
+
+          res.send(html);
+        } else {
+          res.sendFile(indexPath);
+        }
+      } catch (err) {
+        console.error("Error serving SEO index.html", err);
+        res.sendFile(path.join(distPath, 'index.html'));
+      }
     });
   }
 

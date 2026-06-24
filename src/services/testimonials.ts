@@ -11,8 +11,10 @@ const getOfflineTestimonials = (): Testimonial[] => {
     { id: 'test-1', name: 'Brother Emmanuel Phiri', role: 'Congregation Member', organization: 'NNCM Discipleship Group', content: 'Our weekly fellowship and spiritual teachings have deeply transformed my life. I have found true renewal here.', photoURL: '', rating: 5, approved: true, date: Date.now() - 120 * 24 * 3600 * 1000 },
     { id: 'test-2', name: 'Sister Grace Banda', role: 'Youth Ministry Leader', organization: 'NNCM Zomba Board', content: 'Preaching the uncompromised gospel has raised an energetic youth group. The spiritual growth has been amazing.', photoURL: '', rating: 5, approved: true, date: Date.now() - 60 * 24 * 3600 * 1000 }
   ];
-  localStorage.setItem(OFFLINE_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 export const testimonialService = {

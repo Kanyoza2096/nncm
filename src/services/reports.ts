@@ -20,8 +20,10 @@ const getOfflineReports = (): Report[] => {
     { id: 'rep-1', title: 'Q1 Comprehensive Academic Activity Report', type: 'narrative', date: '2026-04-15', size: '2.4 MB', createdAt: Date.now() - 60 * 24 * 3600 * 1000 },
     { id: 'rep-2', title: 'Annual Financial Expenditure Audit (2025)', type: 'financial', date: '2026-05-10', size: '1.8 MB', createdAt: Date.now() - 30 * 24 * 3600 * 1000 }
   ];
-  localStorage.setItem(OFFLINE_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 export const reportService = {

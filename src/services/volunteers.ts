@@ -11,8 +11,10 @@ const getOfflineVolunteers = (): Volunteer[] => {
     { id: 'vol-1', name: 'Memory Gondwe', email: 'memory@gondwe.org', skills: ['Welfare Support'], availability: 'Weekends', status: 'active', createdAt: Date.now() },
     { id: 'vol-2', name: 'John Tembo', email: 'jtembo@gmail.com', skills: ['Event Planning'], availability: 'Remote', status: 'inactive', createdAt: Date.now() }
   ];
-  localStorage.setItem(OFFLINE_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 export const volunteerService = {

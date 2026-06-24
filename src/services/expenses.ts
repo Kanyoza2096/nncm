@@ -11,8 +11,10 @@ const getOfflineExpenses = (): Expense[] => {
     { id: 'exp-1', category: 'Training & Materials', description: 'Bought 150 copies of Discipleship 101 manual books', amount: 450000, date: Date.now() - 5 * 24 * 3600 * 1000, approvedBy: 'Finance Elder', projectId: 'proj-1' },
     { id: 'exp-2', category: 'Transportation', description: 'Youth cell transport coach charter to Zomba Open Air crusade', amount: 320000, date: Date.now() - 10 * 24 * 3600 * 1000, approvedBy: 'Admin', projectId: 'proj-2' }
   ];
-  localStorage.setItem(OFFLINE_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 export const expenseService = {

@@ -12,8 +12,10 @@ const getOfflineProjects = (): Project[] => {
     { id: 'proj-2', title: 'Zomba Youth Group Discipleship Initiative', name: 'Youth Group Discipleship', description: 'Weekly gatherings, youth leadership training, camp counseling, and musical instrument training workshops.', category: 'Youth Ministry', location: 'Zomba', budget: 12000000, raised: 8200000, images: [], status: 'active', startDate: Date.now(), endDate: Date.now() + 2000000000, createdAt: Date.now() },
     { id: 'proj-3', title: 'Community Outreach & Free Counseling Program', name: 'Community Outreach', description: 'Spiritual support, grief counseling services, and free food distribution to vulnerable families.', category: 'Charity outreach', location: 'Zomba', budget: 4500000, raised: 4100000, images: [], status: 'active', startDate: Date.now(), endDate: Date.now() + 150000000, createdAt: Date.now() }
   ];
-  localStorage.setItem(OFFLINE_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 export const projectService = {
@@ -28,7 +30,7 @@ export const projectService = {
     if (shouldUseSupabase()) {
       return supabaseService.projects.getPublicProjects();
     }
-    return getOfflineProjects().filter(p => p.status === 'Active');
+    return getOfflineProjects().filter(p => p.status?.toLowerCase() === 'active');
   },
   createProject: async (data: Omit<Project, 'id'>): Promise<string> => {
     if (shouldUseSupabase()) {

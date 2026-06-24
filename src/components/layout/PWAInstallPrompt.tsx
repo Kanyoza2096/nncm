@@ -100,7 +100,7 @@ export default function PWAInstallPrompt() {
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
             <img 
-              src="/icon-192.png" 
+              src="/logo.png" 
               alt="Logo" 
               className="w-10 h-10 rounded-lg object-contain"
               referrerPolicy="no-referrer"

@@ -11,8 +11,10 @@ const getOfflineBlogPosts = (): BlogPost[] => {
     { id: 'blog-1', title: 'Empowering Young Girls: The Scholastic Lifespans', slug: 'empowering-young-girls-scholastic-lifespans', excerpt: 'How targeted educational scholarship support is breaking generational poverty loops in Zomba District.', content: '# Empowering Young Girls\n\nSupporting girls education is one of the most effective ways to foster sustainable community progression.', authorId: 'system', authorName: 'Madolitso Banda', published: true, category: 'Education', featuredImage: '', publishedAt: Date.now(), createdAt: Date.now() },
     { id: 'blog-2', title: 'Vocational Sewing Lab Launch', slug: 'vocational-sewing-lab-launch', excerpt: 'Highlighting the launch event and starter kit handouts at our rural female entrepreneurship hub.', content: '# Sewing Lab Launch\n\nWe officially launched the center with 12 new premium sewing machines and start-up toolkit bundles.', authorId: 'system', authorName: 'Comfort Phiri', published: true, category: 'Vocational', featuredImage: '', publishedAt: Date.now(), createdAt: Date.now() }
   ];
-  localStorage.setItem(OFFLINE_KEY, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(OFFLINE_KEY, JSON.stringify(finalInitial));
+  return finalInitial;
 };
 
 export const blogService = {

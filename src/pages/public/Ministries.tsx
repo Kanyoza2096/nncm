@@ -50,32 +50,42 @@ export default function Ministries() {
           <p className="text-slate-400 font-light text-sm">Discover specialized departments designed for spiritual growth and community actions.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {ministries.map((m, index) => (
-            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }} key={m.id} className="bg-white border border-slate-105 rounded-3xl overflow-hidden hover:shadow-xl transition-all shadow-sm flex flex-col justify-between group">
-              <div>
-                <div className="h-44 bg-slate-900 relative shrink-0">
-                  <img src={m.featuredImage} alt={m.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />
-                  <div className="absolute top-4 left-4 bg-white/95 text-[9px] uppercase font-bold tracking-widest px-3 py-1 rounded-full shadow">Active Network</div>
-                </div>
-                <div className="p-7">
-                  <h3 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-indigo-600 transition-colors">{m.name}</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed font-light mt-3 line-clamp-3">{m.description}</p>
-                  <div className="mt-6 pt-5 border-t border-slate-50 space-y-2 text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                    <div className="flex items-center gap-1.5"><Compass className="w-3.5 h-3.5 text-indigo-500" /> Leads: <span className="text-slate-700 font-black">{m.leaders.slice(0,2).join(', ')}</span></div>
-                    <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-indigo-500" /> {m.contactEmail}</div>
+        {ministries.length === 0 ? (
+          <div className="max-w-md mx-auto py-16 px-6 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
+             <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+             <h3 className="font-extrabold text-slate-900 text-lg">No Active Ministries</h3>
+             <p className="text-slate-450 text-xs font-light mt-2 leading-relaxed">
+                There are no church ministries registered in our registry right now. Check back soon or contact support to establish a new group.
+             </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {ministries.map((m, index) => (
+              <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }} key={m.id} className="bg-white border border-slate-105 rounded-3xl overflow-hidden hover:shadow-xl transition-all shadow-sm flex flex-col justify-between group">
+                <div>
+                  <div className="h-44 bg-slate-900 relative shrink-0">
+                    <img src={m.featuredImage} alt={m.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90" />
+                    <div className="absolute top-4 left-4 bg-white/95 text-[9px] uppercase font-bold tracking-widest px-3 py-1 rounded-full shadow">Active Network</div>
+                  </div>
+                  <div className="p-7">
+                    <h3 className="font-extrabold text-slate-950 text-base leading-snug group-hover:text-indigo-600 transition-colors">{m.name}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed font-light mt-3 line-clamp-3">{m.description}</p>
+                    <div className="mt-6 pt-5 border-t border-slate-50 space-y-2 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                      <div className="flex items-center gap-1.5"><Compass className="w-3.5 h-3.5 text-indigo-500" /> Leads: <span className="text-slate-700 font-black">{m.leaders.slice(0,2).join(', ')}</span></div>
+                      <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-indigo-500" /> {m.contactEmail}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-7 pt-0 border-t border-slate-50 flex items-center justify-between">
-                 <span className="text-xs text-indigo-600 font-extrabold flex items-center gap-1.5"><Users className="w-4 h-4" /> {m.membersCount} saints</span>
-                 <button onClick={() => handleJoinMinistry(m)} disabled={!!joiningId} className="px-5 py-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-600 font-extrabold rounded-xl text-[11px] uppercase transition-all active:scale-95 disabled:opacity-50">
-                    {joiningId === m.id ? 'Wait...' : 'Join Now'}
-                 </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                <div className="p-7 pt-0 border-t border-slate-50 flex items-center justify-between">
+                   <span className="text-xs text-indigo-600 font-extrabold flex items-center gap-1.5"><Users className="w-4 h-4" /> {m.membersCount} saints</span>
+                   <button onClick={() => handleJoinMinistry(m)} disabled={!!joiningId} className="px-5 py-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-600 font-extrabold rounded-xl text-[11px] uppercase transition-all active:scale-95 disabled:opacity-50">
+                      {joiningId === m.id ? 'Wait...' : 'Join Now'}
+                   </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
       </div>
     </div>
