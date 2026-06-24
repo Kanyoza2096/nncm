@@ -385,8 +385,8 @@ export default function AdminSermons() {
                         placeholder="Path to audio file..."
                       />
                       <NativeFileUpload 
-                         buttonText="Upload MP3" 
-                         acceptTypes="audio/*" 
+                         buttonText="Upload Audio" 
+                         acceptTypes="audio/*, .mp3, .wav, .m4a, .aac, .ogg, .webm, .flac, .mp4, .3gp" 
                          folder="audio_sermons" 
                          onUpload={(url) => setFormData({...formData, audioUrl: url})}
                       />

@@ -69,8 +69,8 @@ export default function Leadership() {
         >
           <div className="lg:col-span-4 flex flex-col items-center">
             <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden shadow-lg border-4 border-indigo-50 bg-slate-50 mb-6 focus-within:ring-2 ring-indigo-500 ring-offset-4 transition-all">
-              {settings.directorPhoto ? (
-                <img src={getImageUrl(settings.directorPhoto)} alt="Senior Pastor" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              {settings.directorImage ? (
+                <img src={getImageUrl(settings.directorImage)} alt="Senior Pastor" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-indigo-600 text-white text-6xl font-black">
                   {(settings.directorName || 'P').split(' ').map(n => n[0]).join('').toUpperCase()}
