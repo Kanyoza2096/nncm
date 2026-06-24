@@ -27,6 +27,38 @@ export default function Settings() {
   const { settings, updateSettings } = useOrgSettings();
   const [activeTab, setActiveTab] = useState('Identity');
   
+  const [disableMockSeeds, setDisableMockSeeds] = useState(() => {
+    return localStorage.getItem('nncm_disable_mock_seeds') !== 'false';
+  });
+
+  const handleToggleMockSeeds = (checked: boolean) => {
+    localStorage.setItem('nncm_disable_mock_seeds', checked ? 'true' : 'false');
+    setDisableMockSeeds(checked);
+    // When changing, let's clear cached lists so they recalculate with the new seed settings
+    const keysToReset = [
+      'nncm_sermons', 'nncm_events', 'nncm_ministries', 'nncm_prayers', 
+      'nncm_counseling', 'nncm_devotionals', 'nncm_library', 'nncm_members', 
+      'nncm_attendance', 'nncm_gallery'
+    ];
+    keysToReset.forEach(k => localStorage.removeItem(k));
+    toast.success(checked ? 'Demo mock data disabled. New sessions will open with a clean slate.' : 'Demo mock data fallback enabled.');
+  };
+
+  const handleClearLocalStorage = () => {
+    if (window.confirm('Are you sure you want to clear all locally cached data in this browser? This will empty all local sermons, events, and registrations saved on this device.')) {
+      const keysToClear = [
+        'nncm_sermons', 'nncm_events', 'nncm_ministries', 'nncm_prayers', 
+        'nncm_counseling', 'nncm_devotionals', 'nncm_library', 'nncm_members', 
+        'nncm_attendance', 'nncm_gallery'
+      ];
+      keysToClear.forEach(k => localStorage.removeItem(k));
+      toast.success('Local browser cache cleared successfully. Refreshing site...');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    }
+  };
+  
   const [formData, setFormData] = useState({
     orgName: settings.orgName || '',
     orgEmail: settings.orgEmail || '',
@@ -292,6 +324,44 @@ export default function Settings() {
                                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Primary Asset / Form ID UID</label>
                                   <input type="text" value={formData.koboFormId} onChange={e => setFormData({...formData, koboFormId: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-600 outline-none transition-all dark:text-white" placeholder="aSdfGhJkl123..." />
                                </div>
+                            </div>
+                         </div>
+
+                         {/* Local Seed & Reset Management */}
+                         <div className="border-t border-slate-100 dark:border-slate-800 pt-8 mt-8 space-y-6">
+                            <div>
+                               <h4 className="text-sm font-black text-slate-950 dark:text-white uppercase tracking-widest text-left">Local Session & Demo Data Settings</h4>
+                               <p className="text-xs text-slate-400 font-medium mt-1 text-left">Control how default mock items are handled when no cloud database is connected.</p>
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800/60 gap-4">
+                               <div className="space-y-1 pr-4 text-left">
+                                  <span className="text-xs font-bold text-slate-900 dark:text-white block">Disable Default Mock Seed Data (Clean Slate)</span>
+                                  <span className="text-[11px] text-slate-400 leading-normal block">When enabled, new users/browsers will start with a completely empty, clean portal rather than being pre-populated with default demo sermons and ministries.</span>
+                               </div>
+                               <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={disableMockSeeds} 
+                                    onChange={e => handleToggleMockSeeds(e.target.checked)} 
+                                    className="sr-only peer" 
+                                  />
+                                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600"></div>
+                                </label>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800/60 gap-4">
+                               <div className="space-y-1 text-left">
+                                  <span className="text-xs font-bold text-slate-900 dark:text-white block font-sans">Clear Browser's Local Cache</span>
+                                  <span className="text-[11px] text-slate-400 leading-normal block font-sans">Wipe out all local data edits, sermons, events, registrations, and settings saved in your current browser session.</span>
+                               </div>
+                               <button 
+                                  type="button" 
+                                  onClick={handleClearLocalStorage}
+                                  className="text-xs text-rose-600 hover:text-white hover:bg-rose-600 font-bold uppercase tracking-widest px-4 py-2 border border-rose-200 dark:border-rose-800/60 rounded-xl transition-all cursor-pointer shrink-0 font-sans"
+                               >
+                                  Wipe Cache
+                                </button>
                             </div>
                          </div>
                       </motion.div>

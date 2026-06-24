@@ -349,8 +349,10 @@ function getList<T>(key: string, initial: T[]): T[] {
       console.warn('Failed parsing cached list for ' + key);
     }
   }
-  localStorage.setItem(key, JSON.stringify(initial));
-  return initial;
+  const disableMock = localStorage.getItem('nncm_disable_mock_seeds') !== 'false'; // defaults to true (clean slate)
+  const finalInitial = disableMock ? [] : initial;
+  localStorage.setItem(key, JSON.stringify(finalInitial));
+  return finalInitial;
 }
 
 function saveList<T>(key: string, data: T[]): void {
