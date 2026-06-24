@@ -149,6 +149,69 @@ const fromDB = (obj: any): any => {
   return result;
 };
 
+const safeInsert = async (table: string, payload: any[]): Promise<{ error: any }> => {
+  const { error } = await supabase.from(table).insert(payload);
+  if (error) {
+    const message = error.message || '';
+    const match = message.match(/Could not find the '([^']+)' column of '([^']+)' in the schema cache/);
+    if (match && payload.length > 0) {
+      const missingColumn = match[1];
+      console.warn(`[Self-Healing DB] Excluded missing column '${missingColumn}' from table '${table}' payload and retrying...`);
+      const newPayload = payload.map(row => {
+        const copy = { ...row };
+        delete copy[missingColumn];
+        return copy;
+      });
+      return safeInsert(table, newPayload);
+    }
+    return { error };
+  }
+  return { error: null };
+};
+
+const safeUpdate = async (table: string, payload: any, id: string, idColumn: string = 'id'): Promise<{ error: any }> => {
+  const { error } = await supabase.from(table).update(payload).eq(idColumn, id);
+  if (error) {
+    const message = error.message || '';
+    const match = message.match(/Could not find the '([^']+)' column of '([^']+)' in the schema cache/);
+    if (match) {
+      const missingColumn = match[1];
+      console.warn(`[Self-Healing DB] Excluded missing column '${missingColumn}' from table '${table}' update payload and retrying...`);
+      const newPayload = { ...payload };
+      delete newPayload[missingColumn];
+      return safeUpdate(table, newPayload, id, idColumn);
+    }
+    return { error };
+  }
+  return { error: null };
+};
+
+const safeUpsert = async (table: string, payload: any): Promise<{ error: any }> => {
+  const { error } = await supabase.from(table).upsert(payload);
+  if (error) {
+    const message = error.message || '';
+    const match = message.match(/Could not find the '([^']+)' column of '([^']+)' in the schema cache/);
+    if (match) {
+      const missingColumn = match[1];
+      console.warn(`[Self-Healing DB] Excluded missing column '${missingColumn}' from table '${table}' upsert payload and retrying...`);
+      const newPayload = Array.isArray(payload) 
+        ? payload.map(row => {
+            const copy = { ...row };
+            delete copy[missingColumn];
+            return copy;
+          })
+        : (() => {
+            const copy = { ...payload };
+            delete copy[missingColumn];
+            return copy;
+          })();
+      return safeUpsert(table, newPayload);
+    }
+    return { error };
+  }
+  return { error: null };
+};
+
 export const supabaseService = {
   // 1. Projects
   projects: {
@@ -237,7 +300,7 @@ export const supabaseService = {
     },
     addBeneficiary: async (beneficiary: Omit<Beneficiary, 'id'>): Promise<string> => {
       const id = generateId();
-      const { error } = await supabase.from('beneficiaries').insert([toDB({
+      const { error } = await safeInsert('beneficiaries', [toDB({
         id,
         name: beneficiary.name,
         email: beneficiary.email || null,
@@ -268,7 +331,7 @@ export const supabaseService = {
         delete updateData.address;
       }
       
-      const { error } = await supabase.from('beneficiaries').update(toDB(updateData)).eq('id', id);
+      const { error } = await safeUpdate('beneficiaries', toDB(updateData), id);
       if (error) { logError("Database operation error", error); throw error; }
     },
     deleteBeneficiary: async (id: string): Promise<void> => {
