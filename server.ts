@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
+import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
 
@@ -120,6 +121,65 @@ async function startServer() {
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Content-Disposition', `attachment; filename=export_${type}_${Date.now()}.${format}`);
     res.send(`Export data for ${type} in ${format} format.\nThis is a mock export for demonstration.`);
+  });
+
+  // Dynamic PWA & SEO Sitemap XML Endpoint
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'nncm.pages.dev';
+      const proto = (req.headers['x-forwarded-proto'] as string) || 'https';
+      const baseUrl = `${proto}://${host}`;
+
+      const staticRoutes = [
+        '', 'about', 'leadership', 'sermons', 'scriptures', 
+        'events', 'ministries', 'prayer', 'donate', 
+        'register', 'blog', 'contact', 'projects', 'transparency', 'volunteer', 'gallery'
+      ];
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+
+      // Append static pages
+      staticRoutes.forEach(route => {
+        const fullUrl = route === '' ? baseUrl : `${baseUrl}/${route}`;
+        xml += `  <url>\n    <loc>${fullUrl}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>${route === '' ? '1.0' : '0.8'}</priority>\n  </url>\n`;
+      });
+
+      // Try to fetch dynamic pages from Supabase
+      try {
+        const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://iacefkmaacznavqjkelj.supabase.co';
+        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhY2Vma21hYWN6bmF2cWprZWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg0NzgsImV4cCI6MjA5NzYxNDQ3OH0.T_Klz3ccS1Z7dPNDNw33NjZMUxdQGC_fZEUJGqb1a0Y';
+        
+        if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder')) {
+          const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+
+          // Fetch dynamic blogs from Supabase table
+          const { data: blogs, error: blogsError } = await supabaseInstance.from('blogs').select('id');
+          if (!blogsError && blogs) {
+            blogs.forEach((blog: any) => {
+              xml += `  <url>\n    <loc>${baseUrl}/blog/${blog.id}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+            });
+          }
+
+          // Fetch dynamic projects from Supabase table
+          const { data: projects, error: projectsError } = await supabaseInstance.from('projects').select('id');
+          if (!projectsError && projects) {
+            projects.forEach((project: any) => {
+              xml += `  <url>\n    <loc>${baseUrl}/projects/${project.id}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+            });
+          }
+        }
+      } catch (dbError) {
+        console.error("Error fetching dynamic data for sitemap from Supabase:", dbError);
+      }
+
+      xml += `</urlset>`;
+
+      res.header('Content-Type', 'application/xml');
+      res.send(xml);
+    } catch (err: any) {
+      console.error("Sitemap generation error:", err);
+      res.status(500).send("Error generating sitemap");
+    }
   });
 
   // Vite middleware for development
