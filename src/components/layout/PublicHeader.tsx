@@ -22,7 +22,7 @@ export default function PublicHeader() {
     { name: 'About Us', href: '/about' },
     { name: 'Photo Gallery', href: '/gallery' },
     { name: 'Sermon Outlines', href: '/sermons' },
-    { name: 'Live Stream', href: '/live' },
+    { name: 'Scriptures', href: '/scriptures' },
     { name: 'Events Calendar', href: '/events' },
     { name: 'Ministries', href: '/ministries' },
     { name: 'Prayer Center', href: '/prayer' },

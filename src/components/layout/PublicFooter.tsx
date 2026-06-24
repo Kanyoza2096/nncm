@@ -46,7 +46,7 @@ export default function PublicFooter() {
               <ul className="space-y-4">
                 <li><Link to="/about" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">Our DNA Statement</Link></li>
                 <li><Link to="/sermons" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">Sermon Outlines</Link></li>
-                <li><Link to="/live" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">Live Streaming</Link></li>
+                <li><Link to="/scriptures" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">Scripture Meditations</Link></li>
               </ul>
             </div>
             

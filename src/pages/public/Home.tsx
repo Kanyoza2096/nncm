@@ -175,11 +175,11 @@ export default function Home() {
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Link
-              to="/live"
+              to="/scriptures"
               className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-bold rounded-2xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-600/35 transition-all duration-200 hover:scale-105 active:scale-95 text-center group"
             >
-              <Radio className="mr-2.5 w-5 h-5 animate-pulse text-rose-500" />
-              Watch Live Stream
+              <BookOpen className="mr-2.5 w-5 h-5 text-indigo-200 group-hover:animate-bounce" />
+              Scripture Meditations
             </Link>
             <Link
               to="/about"

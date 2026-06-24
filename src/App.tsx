@@ -19,7 +19,7 @@ const Unauthorized = lazy(() => import('./pages/Unauthorized'));
 const Home = lazy(() => import('./pages/public/Home'));
 const AboutUs = lazy(() => import('./pages/public/AboutUs'));
 const Sermons = lazy(() => import('./pages/public/Sermons'));
-const Live = lazy(() => import('./pages/public/Live'));
+const Scriptures = lazy(() => import('./pages/public/Scriptures'));
 const EventsCalendar = lazy(() => import('./pages/public/EventsCalendar'));
 const Ministries = lazy(() => import('./pages/public/Ministries'));
 const PrayerCenter = lazy(() => import('./pages/public/PrayerCenter'));
@@ -80,7 +80,7 @@ function App() {
                   <Route path="/about" element={<AboutUs />} />
                   <Route path="/leadership" element={<Leadership />} />
                   <Route path="/sermons" element={<Sermons />} />
-                  <Route path="/live" element={<Live />} />
+                  <Route path="/scriptures" element={<Scriptures />} />
                   <Route path="/events" element={<EventsCalendar />} />
                   <Route path="/ministries" element={<Ministries />} />
                   <Route path="/prayer" element={<PrayerCenter />} />
