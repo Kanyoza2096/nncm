@@ -517,6 +517,27 @@ export const churchService = {
   // 3. Ministries
   ministries: {
     getAll: async (): Promise<MinistryGroup[]> => getList(KEYS.MINISTRIES, initialMinistries),
+    create: async (ministry: Omit<MinistryGroup, 'id' | 'membersCount'>): Promise<string> => {
+      const list = getList(KEYS.MINISTRIES, initialMinistries);
+      const id = 'min-' + Math.random().toString(36).substring(2, 11);
+      const newItem: MinistryGroup = { ...ministry, id, membersCount: 0 };
+      list.unshift(newItem);
+      saveList(KEYS.MINISTRIES, list);
+      return id;
+    },
+    update: async (id: string, updates: Partial<MinistryGroup>): Promise<void> => {
+      const list = getList(KEYS.MINISTRIES, initialMinistries);
+      const idx = list.findIndex(m => m.id === id);
+      if (idx !== -1) {
+        list[idx] = { ...list[idx], ...updates };
+        saveList(KEYS.MINISTRIES, list);
+      }
+    },
+    delete: async (id: string): Promise<void> => {
+      const list = getList(KEYS.MINISTRIES, initialMinistries);
+      const filtered = list.filter(m => m.id !== id);
+      saveList(KEYS.MINISTRIES, filtered);
+    },
     updateCount: async (id: string, change: number): Promise<void> => {
       const list = getList(KEYS.MINISTRIES, initialMinistries);
       const idx = list.findIndex(m => m.id === id);
