@@ -612,6 +612,17 @@ export const churchService = {
   devotionals: {
     getAll: async (): Promise<Devotional[]> => getList(KEYS.DEVOTIONALS, initialDevotionals),
     getForDate: async (date: string): Promise<Devotional | null> => {
+      try {
+        const response = await fetch('/api/gemini/devotional');
+        if (response.ok) {
+          const dynamicDev = await response.json();
+          if (dynamicDev && dynamicDev.title) {
+            return dynamicDev;
+          }
+        }
+      } catch (e) {
+        console.warn('[Devotional Service] Could not fetch dynamic devotional, using seed data:', e);
+      }
       const list = getList(KEYS.DEVOTIONALS, initialDevotionals);
       return list.find(d => d.date === date) || list[0] || null; // fallback to dev-1 if date not matched
     },

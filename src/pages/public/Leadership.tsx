@@ -1,11 +1,67 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Mail, MessageSquare, ShieldCheck, Sparkles, User } from 'lucide-react';
+import { Mail, MessageSquare, ShieldCheck, Sparkles, User, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
 import { authService } from '../../services/auth';
 import { User as UserType } from '../../types';
 import { getImageUrl } from '../../lib/image-utils';
+
+interface TeamLeader {
+  id: string;
+  name: string;
+  role: string;
+  photoURL: string;
+  whatsapp?: string;
+  email?: string;
+  facebook?: string;
+  twitter?: string;
+  linkedin?: string;
+  instagram?: string;
+}
+
+const DEFAULT_LEADERS: TeamLeader[] = [
+  {
+    id: 'placeholder-1',
+    name: 'Pastor Patricia Mkandawire',
+    role: 'Co-Pastor & Women\'s Ministry Director',
+    photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop',
+    whatsapp: '265882404093',
+    email: 'patricia.m@nncm.org',
+    facebook: 'https://facebook.com',
+    instagram: 'https://instagram.com'
+  },
+  {
+    id: 'placeholder-2',
+    name: 'Elder Charles Banda',
+    role: 'Head of Administration & Elder',
+    photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    whatsapp: '265882404093',
+    email: 'charles.b@nncm.org',
+    linkedin: 'https://linkedin.com',
+    facebook: 'https://facebook.com'
+  },
+  {
+    id: 'placeholder-3',
+    name: 'Sister Evelyn Phiri',
+    role: 'Youth & Music Director',
+    photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop',
+    whatsapp: '265882404093',
+    email: 'evelyn.p@nncm.org',
+    instagram: 'https://instagram.com',
+    facebook: 'https://facebook.com'
+  },
+  {
+    id: 'placeholder-4',
+    name: 'Brother Gift Chimwaza',
+    role: 'Missions & Outreach Coordinator',
+    photoURL: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
+    whatsapp: '265882404093',
+    email: 'gift.c@nncm.org',
+    twitter: 'https://twitter.com',
+    linkedin: 'https://linkedin.com'
+  }
+];
 
 export default function Leadership() {
   useDocumentMeta({
@@ -39,6 +95,18 @@ export default function Leadership() {
     fetchTeam();
   }, [settings.directorName]);
 
+  const combinedLeaders: TeamLeader[] = [
+    ...DEFAULT_LEADERS,
+    ...teamMembers.map(member => ({
+      id: member.id,
+      name: member.name,
+      role: member.role.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      photoURL: member.photoURL || '',
+      whatsapp: member.whatsapp || '',
+      email: member.email || '',
+    }))
+  ];
+
   return (
     <div className="bg-slate-50 min-h-screen pt-28 pb-20 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,7 +121,7 @@ export default function Leadership() {
             <ShieldCheck className="w-4 h-4 text-indigo-600" /> Spiritual Pillars & Governance
           </motion.div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-none mb-4">
-            Our Pastoral Team
+            Our Pastoral & Leadership Team
           </h1>
           <p className="text-slate-500 font-light text-base sm:text-lg leading-relaxed">
             Called by God, tested in faith, and dedicated to the spiritual shepherdhood of lives in {settings.orgAddress || 'Malawi'}.
@@ -105,29 +173,34 @@ export default function Leadership() {
         </motion.div>
 
         {/* Other Team Members */}
-        {teamMembers.length > 0 ? (
-          <div className="space-y-12">
-            <div className="text-center">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-3">
-                <div className="h-px w-8 bg-slate-200" />
-                Regional Oversight & Ministry Leaders
-                <div className="h-px w-8 bg-slate-200" />
-              </h2>
-            </div>
+        <div className="space-y-12">
+          <div className="text-center">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-3">
+              <div className="h-px w-8 bg-slate-200" />
+              Regional Oversight & Ministry Leaders
+              <div className="h-px w-8 bg-slate-200" />
+            </h2>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {teamMembers.map((member, index) => (
-                <motion.div
-                  key={member.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow group text-center"
-                >
-                  <div className="relative w-24 h-24 mx-auto mb-4 rounded-2xl overflow-hidden border-2 border-slate-50 shadow-sm group-hover:scale-105 transition-transform duration-500">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {combinedLeaders.map((member, index) => (
+              <motion.div
+                key={member.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow group text-center flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative w-24 h-24 mx-auto mb-4 rounded-2xl overflow-hidden border-2 border-slate-50 shadow-sm group-hover:scale-105 transition-transform duration-500 bg-slate-50">
                     {member.photoURL ? (
-                      <img src={getImageUrl(member.photoURL)} alt={member.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <img 
+                        src={member.photoURL.startsWith('http') ? member.photoURL : getImageUrl(member.photoURL)} 
+                        alt={member.name} 
+                        className="w-full h-full object-cover" 
+                        referrerPolicy="no-referrer" 
+                      />
                     ) : (
                       <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-400 transition-colors">
                         <User className="w-10 h-10" />
@@ -136,30 +209,81 @@ export default function Leadership() {
                   </div>
                   <h3 className="text-lg font-black text-slate-950 leading-tight group-hover:text-indigo-600 transition-colors">{member.name}</h3>
                   <p className="text-[10px] font-bold uppercase text-indigo-500 tracking-widest mt-1">
-                    {member.role.replace('_', ' ')}
+                    {member.role}
                   </p>
-                  
+                </div>
+                
+                {/* Social & Contact Links */}
+                <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-slate-50">
                   {member.whatsapp && (
-                    <div className="mt-4 pt-4 border-t border-slate-50">
-                      <a 
-                        href={`https://wa.me/${member.whatsapp.replace(/\+/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-emerald-600 font-bold text-[10px] uppercase tracking-wider hover:text-emerald-700 transition-colors"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" /> Direct Counsel
-                      </a>
-                    </div>
+                    <a 
+                      href={`https://wa.me/${member.whatsapp.replace(/\+/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="WhatsApp"
+                      className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                    </a>
                   )}
-                </motion.div>
-              ))}
-            </div>
+                  {member.email && (
+                    <a 
+                      href={`mailto:${member.email}`}
+                      title="Email"
+                      className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  {member.facebook && (
+                    <a 
+                      href={member.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Facebook"
+                      className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                    >
+                      <Facebook className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  {member.twitter && (
+                    <a 
+                      href={member.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Twitter / X"
+                      className="p-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <Twitter className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  {member.instagram && (
+                    <a 
+                      href={member.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Instagram"
+                      className="p-1.5 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-lg transition-colors"
+                    >
+                      <Instagram className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  {member.linkedin && (
+                    <a 
+                      href={member.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="LinkedIn"
+                      className="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition-colors"
+                    >
+                      <Linkedin className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+              </motion.div>
+            ))}
           </div>
-        ) : !isLoading && (
-          <div className="text-center py-12 border-t border-slate-100">
-             <p className="text-slate-400 font-medium italic text-sm">Overseer boards and auxiliary pastoral profiles are currently being compiled for regional branches.</p>
-          </div>
-        )}
+        </div>
 
       </div>
     </div>

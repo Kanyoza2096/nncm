@@ -221,49 +221,65 @@ export default function Home() {
 
       {/* 3. Daily Scripture / Devotional Section */}
       {devotional && (
-        <section className="py-24 bg-white">
+        <section id="daily-devotional" className="py-24 bg-gradient-to-b from-white to-slate-50/50 border-b border-slate-100">
           <div className="max-w-4xl mx-auto px-4 sm:px-6">
             <div className="text-center mb-12">
-              <span className="text-xs font-bold text-indigo-600 tracking-widest uppercase">Spiritual Nourishment</span>
-              <h2 className="text-3xl font-extrabold text-slate-950 mt-1">Daily Bread Devotional</h2>
-              <p className="text-slate-400 text-sm mt-2">Drawn directly from our pastoral study for your daily soul edification.</p>
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 tracking-widest uppercase bg-indigo-50 px-3 py-1 rounded-full">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                Spiritual Nourishment
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 mt-3 tracking-tight">Daily Bread Devotional</h2>
+              <p className="text-slate-500 text-sm mt-2 max-w-xl mx-auto font-light">
+                A daily scripture and guided reflection generated fresh each day by our pastoral study assistant for your spiritual walk.
+              </p>
             </div>
 
             <motion.div 
-              initial={{ opacity: 0, scale: 0.98 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-indigo-50/50 border border-indigo-100/50 rounded-3xl p-8 sm:p-12 shadow-xl"
+              transition={{ duration: 0.7 }}
+              className="bg-white border border-indigo-100/60 rounded-3xl p-8 sm:p-12 shadow-xl shadow-indigo-600/[0.03] relative overflow-hidden group"
             >
-              <div className="flex items-center justify-between mb-8 pb-5 border-b border-indigo-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-indigo-600 text-white rounded-xl">
-                    <BookOpen className="w-5 h-5" />
+              {/* Subtle design graphics */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/5 rounded-full filter blur-3xl -mr-10 -mt-10 group-hover:bg-indigo-500/10 transition-colors duration-500" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-amber-500/5 rounded-full filter blur-3xl -ml-10 -mb-10 group-hover:bg-amber-500/10 transition-colors duration-500" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-600/20">
+                    <BookOpen className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-slate-950 text-lg leading-tight">{devotional.title}</h3>
-                    <p className="text-xs text-indigo-600 font-bold mt-0.5">{devotional.date}</p>
+                    <h3 className="font-extrabold text-slate-900 text-xl leading-tight">{devotional.title}</h3>
+                    <p className="text-xs text-indigo-600 font-semibold mt-1">
+                      {devotional.date ? new Date(devotional.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : devotional.date}
+                    </p>
                   </div>
                 </div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#020617] bg-amber-400 px-3.5 py-1.5 rounded-full shadow-sm">
-                  {devotional.scripture}
-                </span>
+                <div className="self-start sm:self-center">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-950 bg-amber-400 px-4 py-2 rounded-2xl shadow-sm border border-amber-300">
+                    <Flame className="w-3.5 h-3.5 text-amber-800" /> {devotional.scripture}
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-6">
-                <div className="relative pl-6 border-l-4 border-indigo-500 italic font-medium text-slate-800 text-lg leading-relaxed bg-white py-3.5 pr-2 rounded-r-2xl shadow-sm">
+                <div className="relative pl-6 border-l-4 border-indigo-600 italic font-medium text-slate-800 text-lg leading-relaxed bg-indigo-50/20 py-4 pr-4 rounded-r-2xl border border-indigo-100/30">
                   {devotional.scriptureText}
                 </div>
                 <div>
-                  <h4 className="text-xs font-extrabold uppercase tracking-wide text-indigo-600 mb-1.5">Today's Reflection</h4>
-                  <p className="text-sm text-slate-600 leading-relaxed font-light whitespace-pre-line">
+                  <h4 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Today's Meditation
+                  </h4>
+                  <p className="text-base text-slate-650 leading-relaxed font-light whitespace-pre-line text-slate-700">
                     {devotional.reflection}
                   </p>
                 </div>
-                <div className="pt-4 mt-4 border-t border-indigo-100">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wide text-indigo-600 mb-2">Guided Prayer Points</h4>
-                  <p className="text-sm bg-white text-slate-700 leading-relaxed italic p-5 rounded-2xl border border-indigo-50/50 shadow-sm">
-                    {devotional.prayer}
+                <div className="pt-6 mt-6 border-t border-slate-100">
+                  <h4 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-3">Guided Daily Prayer</h4>
+                  <p className="text-sm bg-indigo-50/30 text-slate-700 leading-relaxed italic p-6 rounded-2xl border border-indigo-100/40 shadow-inner">
+                    "{devotional.prayer}"
                   </p>
                 </div>
               </div>

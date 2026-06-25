@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
 import { createClient } from "@supabase/supabase-js";
@@ -112,6 +112,99 @@ async function startServer() {
     } catch (error: any) {
       console.error("Gemini API error:", error);
       res.status(500).json({ error: error.message || "Failed to contact Gemini API" });
+    }
+  });
+
+  // In-memory cache for today's devotional
+  let cachedDevotional: { date: string; data: any } | null = null;
+
+  // API Route to generate dynamic Christian devotional via Gemini API
+  app.get("/api/gemini/devotional", async (req, res) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Return cached devotional if it exists and is for today
+      if (cachedDevotional && cachedDevotional.date === today) {
+        return res.json(cachedDevotional.data);
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        console.warn("GEMINI_API_KEY is not configured. Falling back to default seed devotional.");
+        return res.json({
+          id: `dev-fallback-${today}`,
+          date: today,
+          title: "Walking in Divine Strength",
+          scripture: "Isaiah 40:31",
+          scriptureText: '"But those who wait on the Lord shall renew their strength; they shall mount up with wings like eagles, they shall run and not be weary, they shall walk and not faint."',
+          reflection: "In the busyness and demands of our daily life, we can easily find ourselves relying on our own strength. But God promises a divine exchange: when we wait on Him, we exchange our weakness for His limitless strength. To wait on the Lord is not passive waiting; it is active trust, prayerful expectation, and anchoring our minds in His promises. Today, take a moment to rest in His presence and allow Him to renew your soul.",
+          prayer: "Lord, I choose to wait on You today. I release my anxiety, my fatigue, and my self-reliance. Fill me afresh with Your Holy Spirit. Give me wings of faith to rise above every challenge. I receive Your strength for today’s journey. In Jesus' Name, Amen.",
+          isFallback: true
+        });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const prompt = `Generate an inspiring Christian daily devotional for today (${today}). Focus on themes of grace, faith, walking as a new creation, love, or hope in Christ. Return the response in the specified JSON format containing a title, a scripture reference, the scripture text, a short meditation/reflection (3-4 sentences, encouraging and powerful), and a short prayer. Make sure the text is encouraging and uplifting.`;
+
+      const result = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING, description: "An encouraging title for the devotional" },
+              scripture: { type: Type.STRING, description: "Scripture book, chapter, and verse reference (e.g. Romans 8:28)" },
+              scriptureText: { type: Type.STRING, description: "The full text of the scripture passage" },
+              reflection: { type: Type.STRING, description: "A beautifully written short meditation/reflection of 3 to 4 sentences" },
+              prayer: { type: Type.STRING, description: "A short, heartwarming guided prayer" }
+            },
+            required: ["title", "scripture", "scriptureText", "reflection", "prayer"]
+          }
+        }
+      });
+
+      const data = JSON.parse(result.text || "{}");
+      const devotional = {
+        id: `dev-gemini-${today}`,
+        date: today,
+        title: data.title || "The Reality of His Grace",
+        scripture: data.scripture || "Ephesians 2:8",
+        scriptureText: data.scriptureText || '"For by grace you have been saved through faith, and that not of yourselves; it is the gift of God."',
+        reflection: data.reflection || "Today, remember that you are deeply loved and accepted by God. His grace is not a reward for your performance, but a gift of His infinite love. Walk in the freedom of knowing that you have been reconciled to the Father and equipped for every good work.",
+        prayer: data.prayer || "Father, thank You for Your amazing grace that sustains me. I step into this day knowing that I am Your beloved child. Guide my actions and fill my heart with Your peace. Amen.",
+        isDynamic: true
+      };
+
+      // Cache today's devotional
+      cachedDevotional = {
+        date: today,
+        data: devotional
+      };
+
+      res.json(devotional);
+    } catch (error: any) {
+      console.error("Gemini devotional generation failed:", error);
+      const today = new Date().toISOString().split('T')[0];
+      res.json({
+        id: `dev-fallback-${today}`,
+        date: today,
+        title: "Walking in Divine Strength",
+        scripture: "Isaiah 40:31",
+        scriptureText: '"But those who wait on the Lord shall renew their strength; they shall mount up with wings like eagles, they shall run and not be weary, they shall walk and not faint."',
+        reflection: "In the busyness and demands of our daily life, we can easily find ourselves relying on our own strength. But God promises a divine exchange: when we wait on Him, we exchange our weakness for His limitless strength. To wait on the Lord is not passive waiting; it is active trust, prayerful expectation, and anchoring our minds in His promises. Today, take a moment to rest in His presence and allow Him to renew your soul.",
+        prayer: "Lord, I choose to wait on You today. I release my anxiety, my fatigue, and my self-reliance. Fill me afresh with Your Holy Spirit. Give me wings of faith to rise above every challenge. I receive Your strength for today’s journey. In Jesus' Name, Amen.",
+        isFallback: true
+      });
     }
   });
 
