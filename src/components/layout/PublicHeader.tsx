@@ -1,9 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Heart, Shield } from 'lucide-react';
+import { 
+  Menu, 
+  X, 
+  Heart, 
+  Shield, 
+  Bell, 
+  Trash2, 
+  Settings, 
+  Calendar as CalendarIcon, 
+  Check, 
+  Sparkles, 
+  AlertCircle, 
+  Info, 
+  RefreshCw,
+  LogOut
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
 import { getImageUrl } from '../../lib/image-utils';
+import { toast } from 'sonner';
+import { 
+  notificationService, 
+  ChurchNotification, 
+  NotificationPreference 
+} from '../../services/notificationService';
+import { 
+  googleSignIn, 
+  googleSignOut, 
+  isGoogleConnected, 
+  syncChurchReminders 
+} from '../../services/googleCalendar';
 
 export default function PublicHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,11 +38,148 @@ export default function PublicHeader() {
   const location = useLocation();
   const { settings } = useOrgSettings();
 
+  // Notification panel states
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [activeTab, setActiveTab] = useState<'alerts' | 'preferences'>('alerts');
+  const [notifications, setNotifications] = useState<ChurchNotification[]>([]);
+  const [prefs, setPrefs] = useState<NotificationPreference>({
+    sundayService: true,
+    bibleStudy: true,
+    devotional: true,
+    announcements: true,
+  });
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Google Calendar states
+  const [isGoogleLinked, setIsGoogleLinked] = useState(false);
+  const [isSyncingCalendar, setIsSyncingCalendar] = useState(false);
+  const [useMalawiTime, setUseMalawiTime] = useState(true);
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Load notifications data on mount
+  useEffect(() => {
+    setNotifications(notificationService.getHistory());
+    setPrefs(notificationService.getPreferences());
+    setNotifPermission(notificationService.getPermissionState());
+    setIsGoogleLinked(isGoogleConnected());
+
+    // Close dropdown on outside click
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+
+    // Listen to real-time notification dispatches
+    const handleNewNotif = (e: Event) => {
+      const customEvent = e as CustomEvent<ChurchNotification>;
+      if (customEvent.detail) {
+        setNotifications(prev => [customEvent.detail, ...prev]);
+      }
+    };
+    window.addEventListener('nncm_new_notification', handleNewNotif);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('nncm_new_notification', handleNewNotif);
+    };
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleRequestPermission = async () => {
+    const perm = await notificationService.requestPermission();
+    setNotifPermission(perm);
+    if (perm === 'granted') {
+      toast.success('Push notifications activated! 🎉');
+      notificationService.sendNotification(
+        'Welcome to NNCM! 🎉',
+        'You will now receive timely updates and service alerts directly on your device.',
+        'announcement'
+      );
+    } else if (perm === 'denied') {
+      toast.error('Notification permission was denied. Please update your browser settings to allow notifications.');
+    }
+  };
+
+  const handleTogglePref = (key: keyof NotificationPreference) => {
+    const updated = { ...prefs, [key]: !prefs[key] };
+    setPrefs(updated);
+    notificationService.savePreferences(updated);
+    toast.success('Notification preference updated.');
+  };
+
+  const handleClearHistory = () => {
+    notificationService.clearHistory();
+    setNotifications([]);
+    toast.success('History cleared.');
+  };
+
+  const handleMarkAllRead = () => {
+    const updated = notificationService.markAllAsRead();
+    setNotifications(updated);
+    toast.success('All marked as read.');
+  };
+
+  const handleMarkOneRead = (id: string) => {
+    const updated = notificationService.markAsRead(id);
+    setNotifications(updated);
+  };
+
+  const handleSimulateSunday = () => {
+    notificationService.simulateSundayServicePush();
+    toast.info('Simulated Sunday Service Push!');
+  };
+
+  const handleSimulateWednesday = () => {
+    notificationService.simulateBibleStudyPush();
+    toast.info('Simulated Wednesday Bible Study Push!');
+  };
+
+  const handleGoogleConnect = async () => {
+    try {
+      const result = await googleSignIn();
+      if (result) {
+        setIsGoogleLinked(true);
+        toast.success(`Connected to Google Calendar!`, {
+          description: `Signed in as ${result.user.email}`
+        });
+      }
+    } catch (err) {
+      toast.error('Google Sign-In failed', { description: 'Please try again.' });
+    }
+  };
+
+  const handleGoogleDisconnect = async () => {
+    await googleSignOut();
+    setIsGoogleLinked(false);
+    toast.success('Disconnected Google Calendar.');
+  };
+
+  const handleSyncCalendar = async () => {
+    if (!isGoogleLinked) {
+      toast.error('Please connect your Google Account first.');
+      return;
+    }
+    setIsSyncingCalendar(true);
+    try {
+      const res = await syncChurchReminders(useMalawiTime);
+      toast.success('Calendar Sync Successful! 📅', {
+        description: `Sunday Service: ${res.sundayService}, Bible Study: ${res.bibleStudy} (${res.timezone})`
+      });
+    } catch (err: any) {
+      toast.error('Sync failed', { description: err.message || 'Error communicating with Google Calendar.' });
+    } finally {
+      setIsSyncingCalendar(false);
+    }
+  };
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -32,7 +196,7 @@ export default function PublicHeader() {
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-500 ${
-      scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm' : 'bg-white border-b border-transparent'
+      scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-slate-200/50 shadow-sm' : 'bg-white border-b border-transparent'
     }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Top">
         <div className="w-full h-20 flex items-center justify-between">
@@ -74,7 +238,313 @@ export default function PublicHeader() {
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2 lg:gap-4">
+            {/* Notification Bell Icon & Dropdown Container */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all relative active:scale-90 ${
+                  showNotifications ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+                title="Notifications & Integrations"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white animate-bounce">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-3 w-96 bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden z-50 text-left font-sans"
+                  >
+                    {/* Header */}
+                    <div className="p-5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
+                          Sanctuary Reminders
+                          <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            NEW
+                          </span>
+                        </h4>
+                        <p className="text-xs text-slate-400 font-light">Custom notifications and integrations</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {activeTab === 'alerts' && notifications.length > 0 && (
+                          <button 
+                            onClick={handleMarkAllRead} 
+                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:underline"
+                          >
+                            Mark All Read
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setActiveTab(activeTab === 'alerts' ? 'preferences' : 'alerts')}
+                          className="p-1.5 bg-white border border-slate-100 rounded-xl text-slate-500 hover:text-slate-850 hover:bg-slate-50 transition-colors"
+                          title="Notification Settings"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Tab Selector */}
+                    <div className="flex border-b border-slate-50 text-xs font-bold text-center bg-white">
+                      <button 
+                        onClick={() => setActiveTab('alerts')}
+                        className={`flex-1 py-3 border-b-2 transition-all ${
+                          activeTab === 'alerts' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                        }`}
+                      >
+                        Announcements ({notifications.length})
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('preferences')}
+                        className={`flex-1 py-3 border-b-2 transition-all ${
+                          activeTab === 'preferences' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                        }`}
+                      >
+                        Settings & Sync
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="max-h-[380px] overflow-y-auto p-4 space-y-4">
+                      {activeTab === 'alerts' ? (
+                        /* ALERTS TAB */
+                        notifications.length === 0 ? (
+                          <div className="py-12 text-center flex flex-col items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                              <Bell className="w-6 h-6" />
+                            </div>
+                            <p className="text-sm font-semibold text-slate-900">All caught up!</p>
+                            <p className="text-xs text-slate-400 mt-1">No alerts or push notifications logged yet.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5">
+                            {notifications.map(item => (
+                              <div 
+                                key={item.id} 
+                                onClick={() => handleMarkOneRead(item.id)}
+                                className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative group ${
+                                  item.read 
+                                    ? 'bg-white border-slate-50/70 hover:bg-slate-50/50' 
+                                    : 'bg-indigo-50/30 border-indigo-100/50 hover:bg-indigo-50/50 shadow-sm'
+                                }`}
+                              >
+                                {!item.read && (
+                                  <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-indigo-600 rounded-full" />
+                                )}
+                                <div className="flex items-start gap-2.5 pr-4">
+                                  <div className="mt-0.5 text-slate-400">
+                                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                                  </div>
+                                  <div>
+                                    <h5 className="font-bold text-xs text-slate-900 leading-snug">{item.title}</h5>
+                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed font-light">{item.body}</p>
+                                    <span className="text-[9px] font-mono text-slate-400 block mt-2">
+                                      {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(item.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="pt-2 flex justify-between">
+                              <button 
+                                onClick={handleClearHistory}
+                                className="text-[10px] text-rose-600 font-bold hover:underline flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> Clear History
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      ) : (
+                        /* PREFERENCES & GOOGLE CALENDAR TAB */
+                        <div className="space-y-5">
+                          {/* 1. Browser Push Notifications Activation */}
+                          <div className="bg-slate-50/60 border border-slate-100 p-4 rounded-2xl space-y-3">
+                            <h5 className="font-extrabold text-xs text-slate-900 tracking-wide uppercase flex items-center gap-1">
+                              <Bell className="w-3.5 h-3.5 text-indigo-600" /> Browser Push Notifications
+                            </h5>
+                            {notifPermission === 'granted' ? (
+                              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 text-xs p-2.5 rounded-xl border border-emerald-100 font-medium">
+                                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                                Browser push notifications are ACTIVE
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-xs text-slate-500 leading-relaxed font-light">
+                                  Request browser notification permissions to receive direct alerts on your device.
+                                </p>
+                                <button
+                                  onClick={handleRequestPermission}
+                                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 px-3 rounded-xl shadow-md shadow-indigo-600/10 active:scale-[0.98] transition-all"
+                                >
+                                  Activate Browser Notifications
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 2. Push Preferences */}
+                          <div className="space-y-2.5">
+                            <h5 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest px-1">Subscription Preferences</h5>
+                            
+                            <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
+                              <div className="pr-2">
+                                <p className="text-xs font-bold text-slate-900">Sunday Service Alert</p>
+                                <p className="text-[10px] text-slate-400 font-light">Remind me every Sunday at 6:00 AM</p>
+                              </div>
+                              <input 
+                                type="checkbox" 
+                                checked={prefs.sundayService} 
+                                onChange={() => handleTogglePref('sundayService')}
+                                className="w-4.5 h-4.5 accent-indigo-600 rounded"
+                              />
+                            </label>
+
+                            <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
+                              <div className="pr-2">
+                                <p className="text-xs font-bold text-slate-900">Wednesday Bible Study</p>
+                                <p className="text-[10px] text-slate-400 font-light">Remind me every Wednesday at 2:00 PM</p>
+                              </div>
+                              <input 
+                                type="checkbox" 
+                                checked={prefs.bibleStudy} 
+                                onChange={() => handleTogglePref('bibleStudy')}
+                                className="w-4.5 h-4.5 accent-indigo-600 rounded"
+                              />
+                            </label>
+
+                            <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
+                              <div className="pr-2">
+                                <p className="text-xs font-bold text-slate-900">Daily Devotionals</p>
+                                <p className="text-[10px] text-slate-400 font-light">Alert when new Daily Bread is released</p>
+                              </div>
+                              <input 
+                                type="checkbox" 
+                                checked={prefs.devotional} 
+                                onChange={() => handleTogglePref('devotional')}
+                                className="w-4.5 h-4.5 accent-indigo-600 rounded"
+                              />
+                            </label>
+                          </div>
+
+                          {/* 3. Google Calendar Integration */}
+                          <div className="bg-indigo-50/30 border border-indigo-100/50 p-4 rounded-2xl space-y-3">
+                            <h5 className="font-extrabold text-xs text-indigo-900 tracking-wide uppercase flex items-center gap-1">
+                              <CalendarIcon className="w-3.5 h-3.5 text-indigo-600" /> Google Calendar Integration
+                            </h5>
+                            
+                            {!isGoogleLinked ? (
+                              <div className="space-y-2">
+                                <p className="text-xs text-slate-500 leading-relaxed font-light">
+                                  Sync the Sunday Service and Bible Study schedules directly to your personal Google Calendar.
+                                </p>
+                                <button
+                                  onClick={handleGoogleConnect}
+                                  className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 font-bold text-xs py-2 px-3 rounded-xl shadow-sm transition-all"
+                                >
+                                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                                  </svg>
+                                  Sign in with Google
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between text-xs bg-emerald-50 text-emerald-800 p-2.5 rounded-xl border border-emerald-100 font-semibold">
+                                  <span className="flex items-center gap-1">
+                                    <Check className="w-4 h-4 text-emerald-600 shrink-0" /> Google Calendar Connected
+                                  </span>
+                                  <button onClick={handleGoogleDisconnect} className="text-slate-400 hover:text-rose-600" title="Disconnect Account">
+                                    <LogOut className="w-4 h-4" />
+                                  </button>
+                                </div>
+
+                                <div className="space-y-2 bg-white/70 border border-indigo-100/50 p-2.5 rounded-xl">
+                                  <label className="flex items-center gap-2 cursor-pointer text-[11px] text-slate-600 select-none">
+                                    <input 
+                                      type="checkbox" 
+                                      checked={useMalawiTime} 
+                                      onChange={() => setUseMalawiTime(!useMalawiTime)} 
+                                      className="accent-indigo-600"
+                                    />
+                                    <span>Set reminders in CAT Time (Malawi, UTC+2)</span>
+                                  </label>
+                                  <p className="text-[10px] text-slate-400 leading-tight font-light pl-5">
+                                    If unchecked, reminders will match your current browser timezone.
+                                  </p>
+                                </div>
+
+                                <button
+                                  onClick={handleSyncCalendar}
+                                  disabled={isSyncingCalendar}
+                                  className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-lg shadow-indigo-600/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                >
+                                  {isSyncingCalendar ? (
+                                    <>
+                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Synchronizing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="w-3.5 h-3.5" /> Synchronize Reminders Now
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 4. Live Simulators */}
+                          <div className="border border-slate-100 bg-slate-50/50 p-4 rounded-2xl space-y-2">
+                            <h6 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" /> Live Service Reminders Test
+                            </h6>
+                            <p className="text-[10px] text-slate-400 leading-relaxed font-light mb-1.5">
+                              Test exactly how church push reminders display on your device.
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                onClick={handleSimulateSunday}
+                                className="bg-white border border-slate-150 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-[10px] py-2 px-1.5 rounded-xl transition-all"
+                              >
+                                Sunday Alert (6:00AM)
+                              </button>
+                              <button
+                                onClick={handleSimulateWednesday}
+                                className="bg-white border border-slate-150 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-[10px] py-2 px-1.5 rounded-xl transition-all"
+                              >
+                                Bible Study (2:00PM)
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="p-3 border-t border-slate-50 bg-slate-50/40 text-center">
+                      <p className="text-[9px] text-slate-400 font-light flex items-center justify-center gap-1">
+                        <Info className="w-3 h-3 text-indigo-500" /> Reminders automatically repeat weekly once added.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <Link
               to="/login"
               className="text-sm font-bold text-slate-500 hover:text-slate-900 px-4 py-2 transition-colors flex items-center gap-2"
@@ -91,7 +561,24 @@ export default function PublicHeader() {
             </Link>
           </div>
 
-          <div className="xl:hidden flex items-center">
+          <div className="xl:hidden flex items-center gap-2">
+            {/* Mobile Notification Bell Icon */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all relative active:scale-90 ${
+                  showNotifications ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600'
+                }`}
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[8px] font-black border border-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
             <button
               onClick={toggleMenu}
               className="w-10 h-10 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all active:scale-90"
