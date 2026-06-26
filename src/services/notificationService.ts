@@ -67,7 +67,12 @@ export const notificationService = {
    */
   getPermissionState(): NotificationPermission {
     if (!this.isSupported()) return 'denied';
-    return Notification.permission;
+    try {
+      return Notification.permission;
+    } catch (err) {
+      console.warn('[Notifications] Blocked from reading Notification.permission in iframe:', err);
+      return 'denied';
+    }
   },
 
   /**
