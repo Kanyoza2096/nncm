@@ -10,6 +10,7 @@ import {
   Building,
   Heart
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
 import { projectService } from '../../services/projects';
 import { Project } from '../../types';
@@ -38,6 +39,13 @@ export default function ProjectDetail() {
 
   return (
     <div className="bg-white min-h-screen pt-28 pb-20 font-sans">
+      <Helmet>
+        <title>{project.title} - New Nature In Christ Ministry</title>
+        <meta name="description" content={project.description || 'View details of our mission project.'} />
+        <meta property="og:title" content={`${project.title} - New Nature In Christ Ministry`} />
+        <meta property="og:description" content={project.description || 'View details of our mission project.'} />
+        {project.images && project.images[0] && <meta property="og:image" content={getImageUrl(project.images[0])} />}
+      </Helmet>
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
          <Link to="/projects" className="inline-flex items-center text-indigo-600 text-[10px] font-black uppercase tracking-widest mb-10 group">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Project Index

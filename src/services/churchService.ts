@@ -610,21 +610,34 @@ export const churchService = {
 
   // 6. Devotionals
   devotionals: {
-    getAll: async (): Promise<Devotional[]> => getList(KEYS.DEVOTIONALS, initialDevotionals),
+    getAll: async (): Promise<Devotional[]> => {
+      const list = getList(KEYS.DEVOTIONALS, initialDevotionals);
+      return list.length > 0 ? list : initialDevotionals;
+    },
     getForDate: async (date: string): Promise<Devotional | null> => {
       try {
         const response = await fetch('/api/gemini/devotional');
         if (response.ok) {
-          const dynamicDev = await response.json();
-          if (dynamicDev && dynamicDev.title) {
-            return dynamicDev;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const dynamicDev = await response.json();
+            if (dynamicDev && dynamicDev.title) {
+              return dynamicDev;
+            }
+          } else {
+            console.warn('[Devotional Service] /api/gemini/devotional returned non-JSON response:', contentType);
           }
         }
       } catch (e) {
         console.warn('[Devotional Service] Could not fetch dynamic devotional, using seed data:', e);
       }
       const list = getList(KEYS.DEVOTIONALS, initialDevotionals);
-      return list.find(d => d.date === date) || list[0] || null; // fallback to dev-1 if date not matched
+      const matched = list.find(d => d.date === date) || list[0];
+      if (matched) return matched;
+      
+      // Hard fallback to initialDevotionals to ensure Daily Bread is ALWAYS visible in production SPA mode
+      const initialMatched = initialDevotionals.find(d => d.date === date) || initialDevotionals[0];
+      return initialMatched || null;
     },
     create: async (dev: Omit<Devotional, 'id'>): Promise<string> => {
       const list = getList(KEYS.DEVOTIONALS, initialDevotionals);

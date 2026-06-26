@@ -59,17 +59,33 @@ export default function Home() {
       try {
         const allSermons = await churchService.sermons.getAll();
         setSermons(allSermons.slice(0, 3));
+      } catch (err) {
+        console.error('Failed loading sermons:', err);
+      }
 
+      try {
         const allEvents = await churchService.events.getAll();
         setEvents(allEvents.slice(0, 2));
+      } catch (err) {
+        console.error('Failed loading events:', err);
+      }
 
+      try {
         const today = new Date().toISOString().split('T')[0];
         const activeDevotional = await churchService.devotionals.getForDate(today);
         setDevotional(activeDevotional);
+      } catch (err) {
+        console.error('Failed loading devotional:', err);
+      }
 
+      try {
         const activePrayers = await churchService.prayers.getAll();
         setPrayers(activePrayers.slice(0, 3));
+      } catch (err) {
+        console.error('Failed loading prayers:', err);
+      }
 
+      try {
         const allUsers = await authService.getAllProfiles();
         const leaders = allUsers.filter(u => 
           ['pastor', 'ministry_leader', 'readership'].includes(u.role) && 
@@ -77,7 +93,7 @@ export default function Home() {
         ).slice(0, 4);
         setLeadership(leaders);
       } catch (err) {
-        console.error('Failed loading home contents:', err);
+        console.error('Failed loading leadership profiles:', err);
       }
     }
     loadHomeContent();

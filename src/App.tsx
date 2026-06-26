@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { Helmet } from 'react-helmet-async';
 import { AuthProvider } from './hooks/useAuth';
 import { OrgSettingsProvider } from './hooks/useOrgSettings';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -72,6 +73,14 @@ function App() {
       <AuthProvider>
         <OrgSettingsProvider>
           <BrowserRouter>
+            <Helmet>
+              <title>New Nature In Christ Ministry</title>
+              <meta name="description" content="Welcome to New Nature In Christ Ministry. Connect with our community, read sermons, blogs, and support our mission." />
+              <meta name="keywords" content="church, ministry, Jesus Christ, faith, sermons, blogs, charity, Malawi" />
+              <meta property="og:title" content="New Nature In Christ Ministry" />
+              <meta property="og:description" content="Welcome to New Nature In Christ Ministry. Connect with our community, read sermons, blogs, and support our mission." />
+              <meta property="og:type" content="website" />
+            </Helmet>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {/* Public Routes */}
