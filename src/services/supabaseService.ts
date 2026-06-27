@@ -315,6 +315,7 @@ export const supabaseService = {
         childrenCount: Number(beneficiary.childrenCount) || 0,
         occupation: beneficiary.occupation || null,
         status: beneficiary.status || 'active',
+        churchGroup: beneficiary.churchGroup || null,
         koboId: beneficiary.koboId || null,
         rawKoboData: beneficiary.rawKoboData || null,
         assignedTo: beneficiary.assignedTo || null,

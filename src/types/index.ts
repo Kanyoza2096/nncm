@@ -27,6 +27,7 @@ export interface Beneficiary {
   childrenCount: number;
   occupation: string;
   status: 'active' | 'inactive';
+  churchGroup?: string;
   koboId?: string;
   rawKoboData?: any;
   assignedTo?: string;

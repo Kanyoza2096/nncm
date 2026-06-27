@@ -71,8 +71,14 @@ export default function PublicHeader() {
     setNotifPermission(notificationService.getPermissionState());
 
     // Close dropdown on outside click
-    const handleOutsideClick = (event: MouseEvent) => {
+    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
+      
+      // If target is unmounted (e.g. from deleting or marking item read), ignore
+      if (target && !document.body.contains(target)) {
+        return;
+      }
+
       const isDesktopClick = desktopDropdownRef.current && desktopDropdownRef.current.contains(target);
       const isMobileClick = mobileDropdownRef.current && mobileDropdownRef.current.contains(target);
       if (!isDesktopClick && !isMobileClick) {
@@ -80,6 +86,7 @@ export default function PublicHeader() {
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
 
     // Listen to real-time notification dispatches
     const handleNewNotif = (e: Event) => {
@@ -92,6 +99,7 @@ export default function PublicHeader() {
 
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
       window.removeEventListener('nncm_new_notification', handleNewNotif);
     };
   }, []);
