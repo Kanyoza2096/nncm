@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, BookOpen } from 'lucide-react';
-import { Helmet } from 'react-helmet-async';
 import { BlogPost } from '../../types';
 import Markdown from 'react-markdown';
+import { useDocumentMeta } from '../../hooks/useDocumentMeta';
 import { blogService } from '../../services/blog';
 import { getImageUrl } from '../../lib/image-utils';
 
@@ -27,6 +27,14 @@ export default function BlogDetail() {
     fetchPost();
   }, [id]);
 
+  useDocumentMeta({
+    title: post?.title || 'Article Detail',
+    description: post?.summary || post?.content?.slice(0, 150) || 'Read our latest blog post.',
+    ogTitle: post ? `${post.title} - New Nature In Christ Ministry` : undefined,
+    ogDescription: post?.summary || post?.content?.slice(0, 150) || 'Read our latest blog post.',
+    ogImage: post?.featuredImage ? getImageUrl(post.featuredImage) : undefined,
+  });
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-white">
@@ -46,13 +54,6 @@ export default function BlogDetail() {
 
   return (
     <div className="bg-white min-h-screen">
-      <Helmet>
-        <title>{post.title} - New Nature In Christ Ministry</title>
-        <meta name="description" content={post.summary || post.content?.slice(0, 150) || 'Read our latest blog post.'} />
-        <meta property="og:title" content={`${post.title} - New Nature In Christ Ministry`} />
-        <meta property="og:description" content={post.summary || post.content?.slice(0, 150) || 'Read our latest blog post.'} />
-        {post.featuredImage && <meta property="og:image" content={getImageUrl(post.featuredImage)} />}
-      </Helmet>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <Link to="/blog" className="inline-flex items-center text-indigo-600 font-black text-[10px] uppercase tracking-widest mb-10 group transition-all">
           <ArrowLeft className="w-3.5 h-3.5 mr-2 group-hover:-translate-x-1 transition-transform" /> Back to Articles

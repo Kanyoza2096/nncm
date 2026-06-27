@@ -30,7 +30,7 @@ async function generate() {
   try {
     if (supabaseUrl && !supabaseUrl.includes('placeholder')) {
       // 2. Fetch dynamic blogs from Supabase table
-      const { data: blogs, error: blogsError } = await supabase.from('blogs').select('id');
+      const { data: blogs, error: blogsError } = await supabase.from('blog_posts').select('id');
       if (!blogsError && blogs) {
         blogs.forEach(blog => {
           xml += `  <url>\n    <loc>https://nncm.pages.dev/blog/${blog.id}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;

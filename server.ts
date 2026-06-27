@@ -246,7 +246,7 @@ async function startServer() {
           const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
 
           // Fetch dynamic blogs from Supabase table
-          const { data: blogs, error: blogsError } = await supabaseInstance.from('blogs').select('id');
+          const { data: blogs, error: blogsError } = await supabaseInstance.from('blog_posts').select('id');
           if (!blogsError && blogs) {
             blogs.forEach((blog: any) => {
               xml += `  <url>\n    <loc>${baseUrl}/blog/${blog.id}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
