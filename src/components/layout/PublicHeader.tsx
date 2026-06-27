@@ -43,7 +43,18 @@ export default function PublicHeader() {
     announcements: true,
   });
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const desktopDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
 
 
@@ -61,7 +72,10 @@ export default function PublicHeader() {
 
     // Close dropdown on outside click
     const handleOutsideClick = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isDesktopClick = desktopDropdownRef.current && desktopDropdownRef.current.contains(target);
+      const isMobileClick = mobileDropdownRef.current && mobileDropdownRef.current.contains(target);
+      if (!isDesktopClick && !isMobileClick) {
         setShowNotifications(false);
       }
     };
@@ -133,6 +147,240 @@ export default function PublicHeader() {
     toast.info('Simulated Wednesday Bible Study Push!');
   };
 
+  const renderDropdown = (forMobile: boolean) => (
+    <AnimatePresence>
+      {showNotifications && (
+        <>
+          {/* Backdrop on Mobile only to lock focus and style like a true native modal */}
+          {forMobile && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowNotifications(false)}
+              className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-40 sm:hidden"
+            />
+          )}
+
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
+            className="fixed sm:absolute inset-x-4 bottom-4 sm:bottom-auto sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 w-auto sm:w-96 bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden z-50 text-left font-sans"
+          >
+          {/* Header */}
+          <div className="p-5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+            <div>
+              <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
+                Sanctuary Reminders
+                <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  NEW
+                </span>
+              </h4>
+              <p className="text-xs text-slate-400 font-light">Custom notifications and integrations</p>
+            </div>
+            <div className="flex gap-2">
+              {activeTab === 'alerts' && notifications.length > 0 && (
+                <button 
+                  onClick={handleMarkAllRead} 
+                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:underline"
+                >
+                  Mark All Read
+                </button>
+              )}
+              <button
+                onClick={() => setActiveTab(activeTab === 'alerts' ? 'preferences' : 'alerts')}
+                className="p-1.5 bg-white border border-slate-100 rounded-xl text-slate-500 hover:text-slate-850 hover:bg-slate-50 transition-colors"
+                title="Notification Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Selector */}
+          <div className="flex border-b border-slate-50 text-xs font-bold text-center bg-white">
+            <button 
+              onClick={() => setActiveTab('alerts')}
+              className={`flex-1 py-3 border-b-2 transition-all ${
+                activeTab === 'alerts' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Announcements ({notifications.length})
+            </button>
+            <button 
+              onClick={() => setActiveTab('preferences')}
+              className={`flex-1 py-3 border-b-2 transition-all ${
+                activeTab === 'preferences' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Settings & Sync
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="max-h-[380px] overflow-y-auto p-4 space-y-4">
+            {activeTab === 'alerts' ? (
+              /* ALERTS TAB */
+              notifications.length === 0 ? (
+                <div className="py-12 text-center flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                    <Bell className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-900">All caught up!</p>
+                  <p className="text-xs text-slate-400 mt-1">No alerts or push notifications logged yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {notifications.map(item => (
+                    <div 
+                      key={item.id} 
+                      onClick={() => handleMarkOneRead(item.id)}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative group ${
+                        item.read 
+                          ? 'bg-white border-slate-50/70 hover:bg-slate-50/50' 
+                          : 'bg-indigo-50/30 border-indigo-100/50 hover:bg-indigo-50/50 shadow-sm'
+                      }`}
+                    >
+                      {!item.read && (
+                        <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-indigo-600 rounded-full" />
+                      )}
+                      <div className="flex items-start gap-2.5 pr-4">
+                        <div className="mt-0.5 text-slate-400">
+                          <Sparkles className="w-4 h-4 text-indigo-500" />
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-xs text-slate-900 leading-snug">{item.title}</h5>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed font-light">{item.body}</p>
+                          <span className="text-[9px] font-mono text-slate-400 block mt-2">
+                            {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(item.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="pt-2 flex justify-between">
+                    <button 
+                      onClick={handleClearHistory}
+                      className="text-[10px] text-rose-600 font-bold hover:underline flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Clear History
+                    </button>
+                  </div>
+                </div>
+              )
+            ) : (
+              /* PREFERENCES & GOOGLE CALENDAR TAB */
+              <div className="space-y-5">
+                {/* 1. Browser Push Notifications Activation */}
+                <div className="bg-slate-50/60 border border-slate-100 p-4 rounded-2xl space-y-3">
+                  <h5 className="font-extrabold text-xs text-slate-900 tracking-wide uppercase flex items-center gap-1">
+                    <Bell className="w-3.5 h-3.5 text-indigo-600" /> Browser Push Notifications
+                  </h5>
+                  {notifPermission === 'granted' ? (
+                    <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 text-xs p-2.5 rounded-xl border border-emerald-100 font-medium">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                      Browser push notifications are ACTIVE
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-500 leading-relaxed font-light">
+                        Request browser notification permissions to receive direct alerts on your device.
+                      </p>
+                      <button
+                        onClick={handleRequestPermission}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 px-3 rounded-xl shadow-md shadow-indigo-600/10 active:scale-[0.98] transition-all"
+                      >
+                        Activate Browser Notifications
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Push Preferences */}
+                <div className="space-y-2.5">
+                  <h5 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest px-1">Subscription Preferences</h5>
+                  
+                  <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
+                    <div className="pr-2">
+                      <p className="text-xs font-bold text-slate-900">Sunday Service Alert</p>
+                      <p className="text-[10px] text-slate-400 font-light">Remind me every Sunday at 6:00 AM</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={prefs.sundayService} 
+                      onChange={() => handleTogglePref('sundayService')}
+                      className="w-4.5 h-4.5 accent-indigo-600 rounded"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
+                    <div className="pr-2">
+                      <p className="text-xs font-bold text-slate-900">Wednesday Bible Study</p>
+                      <p className="text-[10px] text-slate-400 font-light">Remind me every Wednesday at 2:00 PM</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={prefs.bibleStudy} 
+                      onChange={() => handleTogglePref('bibleStudy')}
+                      className="w-4.5 h-4.5 accent-indigo-600 rounded"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
+                    <div className="pr-2">
+                      <p className="text-xs font-bold text-slate-900">Daily Devotionals</p>
+                      <p className="text-[10px] text-slate-400 font-light">Alert when new Daily Bread is released</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={prefs.devotional} 
+                      onChange={() => handleTogglePref('devotional')}
+                      className="w-4.5 h-4.5 accent-indigo-600 rounded"
+                    />
+                  </label>
+                </div>
+
+                {/* 4. Live Simulators */}
+                <div className="border border-slate-100 bg-slate-50/50 p-4 rounded-2xl space-y-2">
+                  <h6 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" /> Live Service Reminders Test
+                  </h6>
+                  <p className="text-[10px] text-slate-400 leading-relaxed font-light mb-1.5">
+                    Test exactly how church push reminders display on your device.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleSimulateSunday}
+                      className="bg-white border border-slate-150 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-[10px] py-2 px-1.5 rounded-xl transition-all"
+                    >
+                      Sunday Alert (6:00AM)
+                    </button>
+                    <button
+                      onClick={handleSimulateWednesday}
+                      className="bg-white border border-slate-150 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-[10px] py-2 px-1.5 rounded-xl transition-all"
+                    >
+                      Bible Study (2:00PM)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-3 border-t border-slate-50 bg-slate-50/40 text-center">
+            <p className="text-[9px] text-slate-400 font-light flex items-center justify-center gap-1">
+              <Info className="w-3 h-3 text-indigo-500" /> Reminders automatically repeat weekly once added.
+            </p>
+          </div>
+        </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+
 
 
   const navigation = [
@@ -194,7 +442,7 @@ export default function PublicHeader() {
 
           <div className="hidden md:flex items-center gap-2 lg:gap-4">
             {/* Notification Bell Icon & Dropdown Container */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={desktopDropdownRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all relative active:scale-90 ${
@@ -210,224 +458,7 @@ export default function PublicHeader() {
                 )}
               </button>
 
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-3 w-96 bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden z-50 text-left font-sans"
-                  >
-                    {/* Header */}
-                    <div className="p-5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
-                      <div>
-                        <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-1.5">
-                          Sanctuary Reminders
-                          <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            NEW
-                          </span>
-                        </h4>
-                        <p className="text-xs text-slate-400 font-light">Custom notifications and integrations</p>
-                      </div>
-                      <div className="flex gap-2">
-                        {activeTab === 'alerts' && notifications.length > 0 && (
-                          <button 
-                            onClick={handleMarkAllRead} 
-                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:underline"
-                          >
-                            Mark All Read
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setActiveTab(activeTab === 'alerts' ? 'preferences' : 'alerts')}
-                          className="p-1.5 bg-white border border-slate-100 rounded-xl text-slate-500 hover:text-slate-850 hover:bg-slate-50 transition-colors"
-                          title="Notification Settings"
-                        >
-                          <Settings className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Tab Selector */}
-                    <div className="flex border-b border-slate-50 text-xs font-bold text-center bg-white">
-                      <button 
-                        onClick={() => setActiveTab('alerts')}
-                        className={`flex-1 py-3 border-b-2 transition-all ${
-                          activeTab === 'alerts' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                        }`}
-                      >
-                        Announcements ({notifications.length})
-                      </button>
-                      <button 
-                        onClick={() => setActiveTab('preferences')}
-                        className={`flex-1 py-3 border-b-2 transition-all ${
-                          activeTab === 'preferences' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                        }`}
-                      >
-                        Settings & Sync
-                      </button>
-                    </div>
-
-                    {/* Content */}
-                    <div className="max-h-[380px] overflow-y-auto p-4 space-y-4">
-                      {activeTab === 'alerts' ? (
-                        /* ALERTS TAB */
-                        notifications.length === 0 ? (
-                          <div className="py-12 text-center flex flex-col items-center justify-center">
-                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
-                              <Bell className="w-6 h-6" />
-                            </div>
-                            <p className="text-sm font-semibold text-slate-900">All caught up!</p>
-                            <p className="text-xs text-slate-400 mt-1">No alerts or push notifications logged yet.</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2.5">
-                            {notifications.map(item => (
-                              <div 
-                                key={item.id} 
-                                onClick={() => handleMarkOneRead(item.id)}
-                                className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative group ${
-                                  item.read 
-                                    ? 'bg-white border-slate-50/70 hover:bg-slate-50/50' 
-                                    : 'bg-indigo-50/30 border-indigo-100/50 hover:bg-indigo-50/50 shadow-sm'
-                                }`}
-                              >
-                                {!item.read && (
-                                  <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-indigo-600 rounded-full" />
-                                )}
-                                <div className="flex items-start gap-2.5 pr-4">
-                                  <div className="mt-0.5 text-slate-400">
-                                    <Sparkles className="w-4 h-4 text-indigo-500" />
-                                  </div>
-                                  <div>
-                                    <h5 className="font-bold text-xs text-slate-900 leading-snug">{item.title}</h5>
-                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed font-light">{item.body}</p>
-                                    <span className="text-[9px] font-mono text-slate-400 block mt-2">
-                                      {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(item.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            <div className="pt-2 flex justify-between">
-                              <button 
-                                onClick={handleClearHistory}
-                                className="text-[10px] text-rose-600 font-bold hover:underline flex items-center gap-1"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" /> Clear History
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      ) : (
-                        /* PREFERENCES & GOOGLE CALENDAR TAB */
-                        <div className="space-y-5">
-                          {/* 1. Browser Push Notifications Activation */}
-                          <div className="bg-slate-50/60 border border-slate-100 p-4 rounded-2xl space-y-3">
-                            <h5 className="font-extrabold text-xs text-slate-900 tracking-wide uppercase flex items-center gap-1">
-                              <Bell className="w-3.5 h-3.5 text-indigo-600" /> Browser Push Notifications
-                            </h5>
-                            {notifPermission === 'granted' ? (
-                              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 text-xs p-2.5 rounded-xl border border-emerald-100 font-medium">
-                                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                                Browser push notifications are ACTIVE
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <p className="text-xs text-slate-500 leading-relaxed font-light">
-                                  Request browser notification permissions to receive direct alerts on your device.
-                                </p>
-                                <button
-                                  onClick={handleRequestPermission}
-                                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 px-3 rounded-xl shadow-md shadow-indigo-600/10 active:scale-[0.98] transition-all"
-                                >
-                                  Activate Browser Notifications
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* 2. Push Preferences */}
-                          <div className="space-y-2.5">
-                            <h5 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest px-1">Subscription Preferences</h5>
-                            
-                            <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
-                              <div className="pr-2">
-                                <p className="text-xs font-bold text-slate-900">Sunday Service Alert</p>
-                                <p className="text-[10px] text-slate-400 font-light">Remind me every Sunday at 6:00 AM</p>
-                              </div>
-                              <input 
-                                type="checkbox" 
-                                checked={prefs.sundayService} 
-                                onChange={() => handleTogglePref('sundayService')}
-                                className="w-4.5 h-4.5 accent-indigo-600 rounded"
-                              />
-                            </label>
-
-                            <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
-                              <div className="pr-2">
-                                <p className="text-xs font-bold text-slate-900">Wednesday Bible Study</p>
-                                <p className="text-[10px] text-slate-400 font-light">Remind me every Wednesday at 2:00 PM</p>
-                              </div>
-                              <input 
-                                type="checkbox" 
-                                checked={prefs.bibleStudy} 
-                                onChange={() => handleTogglePref('bibleStudy')}
-                                className="w-4.5 h-4.5 accent-indigo-600 rounded"
-                              />
-                            </label>
-
-                            <label className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:bg-slate-50/50 transition-colors">
-                              <div className="pr-2">
-                                <p className="text-xs font-bold text-slate-900">Daily Devotionals</p>
-                                <p className="text-[10px] text-slate-400 font-light">Alert when new Daily Bread is released</p>
-                              </div>
-                              <input 
-                                type="checkbox" 
-                                checked={prefs.devotional} 
-                                onChange={() => handleTogglePref('devotional')}
-                                className="w-4.5 h-4.5 accent-indigo-600 rounded"
-                              />
-                            </label>
-                            </div>
-
-                          {/* 4. Live Simulators */}
-                          <div className="border border-slate-100 bg-slate-50/50 p-4 rounded-2xl space-y-2">
-                            <h6 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                              <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" /> Live Service Reminders Test
-                            </h6>
-                            <p className="text-[10px] text-slate-400 leading-relaxed font-light mb-1.5">
-                              Test exactly how church push reminders display on your device.
-                            </p>
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                onClick={handleSimulateSunday}
-                                className="bg-white border border-slate-150 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-[10px] py-2 px-1.5 rounded-xl transition-all"
-                              >
-                                Sunday Alert (6:00AM)
-                              </button>
-                              <button
-                                onClick={handleSimulateWednesday}
-                                className="bg-white border border-slate-150 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-[10px] py-2 px-1.5 rounded-xl transition-all"
-                              >
-                                Bible Study (2:00PM)
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="p-3 border-t border-slate-50 bg-slate-50/40 text-center">
-                      <p className="text-[9px] text-slate-400 font-light flex items-center justify-center gap-1">
-                        <Info className="w-3 h-3 text-indigo-500" /> Reminders automatically repeat weekly once added.
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {!isMobile && renderDropdown(false)}
             </div>
 
             <Link
@@ -448,7 +479,7 @@ export default function PublicHeader() {
 
           <div className="xl:hidden flex items-center gap-2">
             {/* Mobile Notification Bell Icon */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative md:hidden" ref={mobileDropdownRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all relative active:scale-90 ${
@@ -462,6 +493,8 @@ export default function PublicHeader() {
                   </span>
                 )}
               </button>
+
+              {isMobile && renderDropdown(true)}
             </div>
 
             <button

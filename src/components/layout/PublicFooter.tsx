@@ -78,14 +78,14 @@ export default function PublicFooter() {
         {/* Bottom Bar */}
         <div className="mt-24 pt-8 border-t border-slate-800/50 flex flex-col sm:flex-row justify-between items-center gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-            <p className="text-sm font-medium text-slate-500">
+            <p className="text-sm font-medium text-slate-500 leading-relaxed">
               &copy; 2026 {settings.orgName}. All rights reserved. | Designed for God's Glory | Developed by <a 
-                href="https://Kanyoza2096.github.com" 
+                href="https://github.com/kanyoza2096" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:underline text-indigo-400 font-semibold"
+                className="hover:underline text-indigo-400 font-semibold inline-flex items-center"
               >
-                Kanyoza
+                Kanyoza Systems
               </a>
             </p>
             <span className="hidden sm:inline text-slate-700">|</span>

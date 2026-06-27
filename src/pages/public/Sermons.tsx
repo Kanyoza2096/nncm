@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { useSearchParams } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { 
   Search, 
   Download, 
-  X, 
-  Video, 
-  BookOpen,
-  FileText,
-  Music
+  Music,
+  Disc
 } from 'lucide-react';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
@@ -21,33 +18,25 @@ export default function Sermons() {
   const { settings } = useOrgSettings();
   useDocumentMeta({
     title: 'Sermons Library',
-    description: 'Listen to and watch recent sermons, biblical teachings, and messages from New Nature in Christ Ministry.',
-    keywords: 'sermons, preaching, bible teaching, audio sermons, video messages, NNCM'
+    description: 'Listen to recent audio sermons and teachings from New Nature in Christ Ministry.',
+    keywords: 'sermons, preaching, bible teaching, audio sermons, NNCM'
   });
-
-  const [searchParams] = useSearchParams();
-  const initialSermonId = searchParams.get('id');
 
   const [sermons, setSermons] = useState<Sermon[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [activeSermon, setActiveSermon] = useState<Sermon | null>(null);
 
   useEffect(() => {
     async function fetchSermons() {
       try {
         const list = await churchService.sermons.getAll();
         setSermons(list);
-        if (initialSermonId) {
-          const matched = list.find(s => s.id === initialSermonId);
-          if (matched) setActiveSermon(matched);
-        }
       } catch (err) {
         console.error(err);
       }
     }
     fetchSermons();
-  }, [initialSermonId]);
+  }, []);
 
   const categories = ['All', 'Sunday Service', 'Midweek Service', 'Youth', 'Crusade'];
 
@@ -59,16 +48,27 @@ export default function Sermons() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleDownload = async (s: Sermon) => {
+  const handleDownloadAudio = async (s: Sermon) => {
     try {
       await churchService.sermons.incrementDownload(s.id);
       setSermons(prev => prev.map(item => item.id === s.id ? { ...item, downloadsCount: item.downloadsCount + 1 } : item));
-      if (activeSermon && activeSermon.id === s.id) {
-        setActiveSermon(prev => prev ? { ...prev, downloadsCount: prev.downloadsCount + 1 } : null);
-      }
-      toast.success(`Study guide downloaded for: "${s.title}"!`);
+      
+      // Use actual audio link or fallback high-quality placeholder for realistic play
+      const audioUrl = (!s.audioUrl || s.audioUrl === '#') 
+        ? 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
+        : getImageUrl(s.audioUrl);
+      
+      const link = document.createElement('a');
+      link.href = audioUrl;
+      link.download = `${s.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp3`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Downloading audio sermon: "${s.title}"!`);
     } catch (e) {
       console.error(e);
+      toast.error('Failed to trigger download. Please try again.');
     }
   };
 
@@ -78,10 +78,10 @@ export default function Sermons() {
         
         {/* Banner */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-xs font-bold text-indigo-600 tracking-widest uppercase">Spiritual Word Feed</span>
-          <h1 className="text-4xl font-extrabold text-[#020617] mt-1 mb-3">Sermon Outlines & Audio</h1>
+          <span className="text-xs font-bold text-indigo-600 tracking-widest uppercase">Spiritual Audio Feed</span>
+          <h1 className="text-4xl font-extrabold text-[#020617] mt-1 mb-3">Audio Sermons Library</h1>
           <p className="text-slate-500 font-light text-sm">
-            Access revelation knowledge through our archived weekly assembly study guides and digital playbacks.
+            Listen directly to recent sermon messages and preaching. Stream or download any spiritual teaching.
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export default function Sermons() {
               type="text" 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by topic, scripture, or preacher..."
+              placeholder="Search by topic or preacher..."
               className="w-full pl-11 pr-4 py-2.5 text-sm rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-600 text-slate-800 transition-all font-medium"
             />
           </div>
@@ -119,126 +119,86 @@ export default function Sermons() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filtered.length === 0 ? (
             <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-slate-100 border-dashed">
-               <BookOpen className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-               <p className="text-slate-400 font-medium">No archived sermons matched your current criteria.</p>
+               <Music className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+               <p className="text-slate-400 font-medium">No archived audio sermons matched your current criteria.</p>
             </div>
           ) : (
-            filtered.map((s) => (
-              <motion.div 
-                key={s.id}
-                layoutId={`sermon-card-${s.id}`}
-                className="bg-white border border-slate-100 rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full cursor-pointer group"
-                onClick={() => setActiveSermon(s)}
-              >
-                <div className="h-44 relative bg-slate-900 overflow-hidden shrink-0">
-                  <img src={getImageUrl(s.coverImage)} alt={s.title} className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                  <span className="absolute top-4 left-4 bg-white/95 text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-wider text-slate-900">
-                    {s.category}
-                  </span>
-                </div>
+            filtered.map((s) => {
+              const audioSource = (!s.audioUrl || s.audioUrl === '#') 
+                ? 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
+                : getImageUrl(s.audioUrl);
 
-                <div className="p-7 flex-1 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10px] font-mono text-indigo-600 font-bold uppercase tracking-widest">{s.date}</span>
-                    <h3 className="font-extrabold text-slate-950 text-lg leading-snug mt-2 line-clamp-2">{s.title}</h3>
-                    <p className="text-xs text-slate-450 mt-3 font-light leading-relaxed line-clamp-2">{s.excerpt}</p>
-                  </div>
-
-                  <div className="mt-8 pt-5 border-t border-slate-50 flex items-center justify-between text-[11px] font-bold">
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <Download className="w-3.5 h-3.5" /> {s.downloadsCount}
+              return (
+                <motion.div 
+                  key={s.id}
+                  layoutId={`sermon-card-${s.id}`}
+                  className="bg-white border border-slate-150 rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full group"
+                >
+                  {/* Thumbnail / Cover Image */}
+                  <div className="h-48 relative bg-slate-900 overflow-hidden shrink-0">
+                    <img 
+                      src={getImageUrl(s.coverImage)} 
+                      alt={s.title} 
+                      className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-500" 
+                      referrerPolicy="no-referrer" 
+                    />
+                    <span className="absolute top-4 left-4 bg-white/95 text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-wider text-slate-900 shadow-sm">
+                      {s.category}
                     </span>
-                    <span className="text-indigo-600 uppercase tracking-widest group-hover:underline">Study notes &rarr;</span>
+                    <div className="absolute top-4 right-4 bg-indigo-600/90 text-white p-2 rounded-full shadow-sm">
+                      <Disc className="w-4 h-4 animate-spin-slow text-white" />
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))
+
+                  {/* Sermon Info */}
+                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider">
+                        {s.date} &bull; {s.pastor}
+                      </div>
+                      <h3 className="font-extrabold text-slate-950 text-lg leading-snug line-clamp-2">
+                        {s.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-light leading-relaxed line-clamp-2">
+                        {s.excerpt}
+                      </p>
+                    </div>
+
+                    {/* Integrated Audio Player */}
+                    <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl space-y-2">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
+                        <Music className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Sermon Audio Playback</span>
+                      </div>
+                      <audio 
+                        controls 
+                        className="w-full h-8 accent-indigo-600 rounded-lg" 
+                        src={audioSource}
+                        preload="none"
+                      >
+                        Your browser does not support audio playback.
+                      </audio>
+                    </div>
+
+                    {/* Download & Stats Footer */}
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-xs text-slate-400 font-medium font-mono">
+                        {s.downloadsCount} downloads
+                      </span>
+                      <button 
+                        onClick={() => handleDownloadAudio(s)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download MP3
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
           )}
         </div>
-
-        {/* Sermon Detail Modal */}
-        <AnimatePresence>
-          {activeSermon && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-[#020617]/90 backdrop-blur-md p-4 sm:p-6 flex items-center justify-center"
-            >
-              <motion.div 
-                initial={{ scale: 0.95, y: 15 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.95, y: 15 }}
-                className="bg-white max-w-4xl w-full rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-bold px-3 py-1 bg-indigo-600 text-white rounded-full uppercase">{activeSermon.category}</span>
-                    <h2 className="font-extrabold text-slate-900 text-sm sm:text-base truncate max-w-[200px] sm:max-w-md">{activeSermon.title}</h2>
-                  </div>
-                  <button onClick={() => setActiveSermon(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-all">
-                    <X className="w-5 h-5 text-slate-400" />
-                  </button>
-                </div>
-
-                <div className="p-6 sm:p-10 overflow-y-auto space-y-8 flex-1">
-                  {activeSermon.videoUrl && (
-                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
-                      <iframe src={activeSermon.videoUrl} title="playback" className="absolute inset-0 w-full h-full" allowFullScreen />
-                    </div>
-                  )}
-
-                  {activeSermon.audioUrl && activeSermon.audioUrl !== '#' && (
-                    <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-                      <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
-                          <Music className="w-5 h-5 animate-pulse" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900 leading-tight block">Listen to Audio Sermon</p>
-                          <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest block">Digital Playback Recording</p>
-                        </div>
-                      </div>
-                      <div className="w-full sm:flex-1 max-w-md">
-                        <audio controls className="w-full" src={getImageUrl(activeSermon.audioUrl)}>
-                          Your browser does not support the audio element.
-                        </audio>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                    <div className="lg:col-span-8 space-y-8">
-                       <div className="space-y-4">
-                         <h4 className="text-xs font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2">
-                           <FileText className="w-4 h-4" /> Structured Insights & Highlights
-                         </h4>
-                         <div className="bg-slate-50 rounded-2xl p-8 border border-slate-100 text-slate-700 text-sm leading-relaxed whitespace-pre-line font-light">
-                           {activeSermon.notes || 'Full study highlights are synchronized upon publication. Please refer to the PDF download for current outlines.'}
-                         </div>
-                       </div>
-                    </div>
-
-                    <div className="lg:col-span-4">
-                       <div className="bg-slate-900 text-white p-8 rounded-3xl text-center space-y-5 shadow-xl relative overflow-hidden">
-                         <div className="relative z-10">
-                           <BookOpen className="w-10 h-10 text-amber-400 mx-auto mb-2" />
-                           <h5 className="font-bold text-lg leading-tight">Assembly Study Booklet</h5>
-                           <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">Full weekly study outline with Hebrew context and Thursday cell questions.</p>
-                           <button onClick={() => handleDownload(activeSermon)} className="w-full mt-6 flex justify-center items-center py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
-                             <Download className="w-4 h-4 mr-2" /> Download Ref
-                           </button>
-                           <span className="block mt-4 text-[9px] font-mono opacity-50">{activeSermon.downloadsCount} community requests</span>
-                         </div>
-                       </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
       </div>
     </div>

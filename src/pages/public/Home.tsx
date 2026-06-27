@@ -21,7 +21,9 @@ import {
   Globe,
   Plus,
   ShieldCheck,
-  User
+  User,
+  Music,
+  Disc
 } from 'lucide-react';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
@@ -98,6 +100,29 @@ export default function Home() {
     }
     loadHomeContent();
   }, []);
+
+  const handleDownloadAudio = async (s: Sermon) => {
+    try {
+      await churchService.sermons.incrementDownload(s.id);
+      setSermons(prev => prev.map(item => item.id === s.id ? { ...item, downloadsCount: item.downloadsCount + 1 } : item));
+      
+      const audioUrl = (!s.audioUrl || s.audioUrl === '#') 
+        ? 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
+        : getImageUrl(s.audioUrl);
+      
+      const link = document.createElement('a');
+      link.href = audioUrl;
+      link.download = `${s.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp3`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Downloading audio sermon: "${s.title}"!`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to trigger download. Please try again.');
+    }
+  };
 
   const handlePrayerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -323,51 +348,77 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {sermons.map((s, index) => (
-              <motion.div 
-                key={s.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white border border-slate-150 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col h-full group"
-              >
-                <div className="h-48 relative overflow-hidden shrink-0 bg-slate-900">
-                  <img src={s.coverImage} alt={s.title} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-4 left-4 bg-white/95 backdrop-blur text-[10px] font-bold px-3.5 py-1 rounded-full uppercase tracking-widest text-[#020617] shadow-sm">
-                    {s.category}
-                  </div>
-                  {s.videoUrl && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Link to={`/sermons?id=${s.id}`} className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center text-indigo-600 shadow-lg group-hover:scale-110 transition-transform">
-                        <Video className="w-5 h-5 fill-indigo-600" />
-                      </Link>
+            {sermons.map((s, index) => {
+              const audioSource = (!s.audioUrl || s.audioUrl === '#') 
+                ? 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
+                : getImageUrl(s.audioUrl);
+
+              return (
+                <motion.div 
+                  key={s.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="bg-white border border-slate-150 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col h-full group"
+                >
+                  <div className="h-48 relative overflow-hidden shrink-0 bg-slate-900">
+                    <img 
+                      src={getImageUrl(s.coverImage)} 
+                      alt={s.title} 
+                      className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-500" 
+                    />
+                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur text-[10px] font-bold px-3.5 py-1 rounded-full uppercase tracking-widest text-[#020617] shadow-sm">
+                      {s.category}
                     </div>
-                  )}
-                </div>
-
-                <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10px] font-mono text-slate-400 font-bold uppercase">{s.date} &bull; {s.pastor}</span>
-                    <h3 className="font-extrabold text-slate-950 text-lg line-clamp-2 mt-2 leading-snug group-hover:text-indigo-600 transition-colors">
-                      {s.title}
-                    </h3>
-                    <p className="mt-3 text-xs text-slate-405 font-light line-clamp-3">
-                      {s.excerpt}
-                    </p>
+                    <div className="absolute top-4 right-4 bg-indigo-600/90 text-white p-2 rounded-full shadow-sm">
+                      <Disc className="w-4 h-4 animate-spin-slow text-white" />
+                    </div>
                   </div>
 
-                  <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-semibold flex items-center gap-1.5 font-mono">
-                      <Download className="w-4 h-4 text-slate-400" /> {s.downloadsCount} downloads
-                    </span>
-                    <Link to={`/sermons?id=${s.id}`} className="text-indigo-600 font-bold hover:underline inline-flex items-center gap-1">
-                      Read Notes <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                    <div>
+                      <span className="text-[10px] font-mono text-slate-400 font-bold uppercase">{s.date} &bull; {s.pastor}</span>
+                      <h3 className="font-extrabold text-slate-950 text-base line-clamp-2 mt-2 leading-snug">
+                        {s.title}
+                      </h3>
+                      <p className="mt-2 text-xs text-slate-500 font-light line-clamp-2 leading-relaxed">
+                        {s.excerpt}
+                      </p>
+
+                      {/* Integrated Audio Player */}
+                      <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl mt-4 space-y-1.5">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
+                          <Music className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Sermon Audio Playback</span>
+                        </div>
+                        <audio 
+                          controls 
+                          className="w-full h-8 accent-indigo-600 rounded-lg" 
+                          src={audioSource}
+                          preload="none"
+                        >
+                          Your browser does not support audio playback.
+                        </audio>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-400 font-semibold flex items-center gap-1.5 font-mono">
+                        {s.downloadsCount} downloads
+                      </span>
+                      <button 
+                        onClick={() => handleDownloadAudio(s)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download MP3
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
