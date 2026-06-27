@@ -75,6 +75,7 @@ const camelToSnakeMap: Record<string, string> = {
   coverImage: 'cover_image',
   registrationOpen: 'registration_open',
   registeredCount: 'registered_count',
+  scriptureText: 'scripture_text',
 };
 
 const snakeToCamelMap: Record<string, string> = {
@@ -1212,6 +1213,61 @@ export const supabaseService = {
             console.error(`[Supabase Bridge] Event registration failed in ${table}:`, e);
           }
         }
+      }
+    },
+    devotionals: {
+      getAll: async (): Promise<any[]> => {
+        const candidateTables = ['devotionals', 'nncm_devotionals', 'church_devotionals'];
+        let lastError = null;
+        for (const table of candidateTables) {
+          try {
+            const { data, error } = await supabase.from(table).select('*');
+            if (!error && data) {
+              return data.map(item => fromDB(item));
+            }
+            if (error && error.code !== '42P01') {
+              lastError = error;
+            }
+          } catch (e) {
+            console.error(`[Supabase Bridge] Failed reading from ${table}:`, e);
+          }
+        }
+        if (lastError) {
+          console.error('[Supabase Bridge] Devotionals fetch error:', lastError);
+        }
+        throw new Error('Devotionals table not accessible in Supabase');
+      },
+      getForDate: async (date: string): Promise<any | null> => {
+        const candidateTables = ['devotionals', 'nncm_devotionals', 'church_devotionals'];
+        for (const table of candidateTables) {
+          try {
+            const { data, error } = await supabase.from(table).select('*').eq('date', date).maybeSingle();
+            if (!error && data) {
+              return fromDB(data);
+            }
+          } catch (e) {
+            console.error(`[Supabase Bridge] Devotional query failed for ${table}:`, e);
+          }
+        }
+        return null;
+      },
+      create: async (dev: any): Promise<string> => {
+        const id = 'dev-' + Math.random().toString(36).substring(2, 11);
+        const candidateTables = ['devotionals', 'nncm_devotionals', 'church_devotionals'];
+        for (const table of candidateTables) {
+          try {
+            const payload = toDB({
+              id,
+              ...dev,
+              created_at: new Date().toISOString()
+            });
+            const { error } = await supabase.from(table).insert([payload]);
+            if (!error) return id;
+          } catch (e) {
+            console.error(`[Supabase Bridge] Devotional creation failed in ${table}:`, e);
+          }
+        }
+        throw new Error('No writable devotionals table found in Supabase');
       }
     }
   }

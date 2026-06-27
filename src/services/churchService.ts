@@ -611,6 +611,13 @@ export const churchService = {
   // 6. Devotionals
   devotionals: {
     getAll: async (): Promise<Devotional[]> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.devotionals.getAll();
+        } catch (e) {
+          console.warn('[Devotional Service] Supabase fetch failed, falling back to local:', e);
+        }
+      }
       const list = getList(KEYS.DEVOTIONALS, initialDevotionals);
       return list.length > 0 ? list : initialDevotionals;
     },
@@ -629,8 +636,18 @@ export const churchService = {
           }
         }
       } catch (e) {
-        console.warn('[Devotional Service] Could not fetch dynamic devotional, using seed data:', e);
+        console.warn('[Devotional Service] Could not fetch dynamic devotional from API, trying database:', e);
       }
+
+      if (shouldUseSupabase()) {
+        try {
+          const dbDev = await supabaseService.church.devotionals.getForDate(date);
+          if (dbDev) return dbDev;
+        } catch (e) {
+          console.warn('[Devotional Service] Supabase query failed, falling back to local:', e);
+        }
+      }
+
       const list = getList(KEYS.DEVOTIONALS, initialDevotionals);
       const matched = list.find(d => d.date === date) || list[0];
       if (matched) return matched;
@@ -640,6 +657,13 @@ export const churchService = {
       return initialMatched || null;
     },
     create: async (dev: Omit<Devotional, 'id'>): Promise<string> => {
+      if (shouldUseSupabase()) {
+        try {
+          return await supabaseService.church.devotionals.create(dev);
+        } catch (e) {
+          console.warn('[Devotional Service] Supabase create failed, falling back to local:', e);
+        }
+      }
       const list = getList(KEYS.DEVOTIONALS, initialDevotionals);
       const id = 'dev-' + Math.random().toString(36).substring(2, 11);
       const newItem: Devotional = { ...dev, id };

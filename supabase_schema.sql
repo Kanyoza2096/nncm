@@ -224,6 +224,19 @@ CREATE TABLE IF NOT EXISTS public.events (
 );
 
 
+-- 15. Create Devotionals Table
+CREATE TABLE IF NOT EXISTS public.devotionals (
+    id TEXT PRIMARY KEY,
+    date TEXT NOT NULL,
+    title TEXT NOT NULL,
+    scripture TEXT NOT NULL,
+    scripture_text TEXT,
+    reflection TEXT NOT NULL,
+    prayer TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
 -- ==========================================
 -- DISABLE ROW LEVEL SECURITY (RLS) FOR FREE FLOW AND TO FIX PERMISSION ERRORS 
 -- This completely resolves "permission denied for table" errors in development setup.
@@ -243,6 +256,7 @@ ALTER TABLE IF EXISTS public.reports DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.gallery DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.sermons DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.events DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.devotionals DISABLE ROW LEVEL SECURITY;
 
 
 -- ==========================================
