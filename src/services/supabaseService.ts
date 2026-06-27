@@ -1045,7 +1045,7 @@ export const supabaseService = {
         let lastError = null;
         for (const table of candidateTables) {
           try {
-            const { data, error } = await supabase.from(table).select('*');
+            const { data, error } = await supabase.from(table).select('*').order('date', { ascending: false });
             if (!error && data) {
               return data.map(item => {
                 const mapped = fromDB(item);

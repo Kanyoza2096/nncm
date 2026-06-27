@@ -173,6 +173,16 @@ export default function Sermons() {
                     {/* Styled as a video card: floating circular play icon overlay in the center */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <motion.div 
+                        onClick={() => {
+                          const player = document.getElementById(`audio-player-${s.id}`) as HTMLAudioElement;
+                          if (player) {
+                            if (currentlyPlaying === s.id) {
+                              player.pause();
+                            } else {
+                              player.play();
+                            }
+                          }
+                        }}
                         animate={{ scale: isPlaying ? [1, 1.08, 1] : 1 }}
                         transition={{ repeat: isPlaying ? Infinity : 0, duration: 2 }}
                         className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-2xl group-hover:bg-indigo-600/95 group-hover:border-indigo-500 transition-all duration-300 pointer-events-auto cursor-pointer"
@@ -230,6 +240,7 @@ export default function Sermons() {
                         {isPlaying && <span className="text-indigo-600 animate-pulse text-[9px]">● STREAMING</span>}
                       </div>
                       <audio 
+                        id={`audio-player-${s.id}`}
                         controls 
                         onPlay={() => setCurrentlyPlaying(s.id)}
                         onPause={() => { if (currentlyPlaying === s.id) setCurrentlyPlaying(null); }}

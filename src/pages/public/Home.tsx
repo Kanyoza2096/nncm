@@ -44,6 +44,7 @@ export default function Home() {
   
   // States
   const [sermons, setSermons] = useState<Sermon[]>([]);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [devotional, setDevotional] = useState<Devotional | null>(null);
   const [prayers, setPrayers] = useState<PrayerCenterRequest[]>([]);
@@ -354,6 +355,8 @@ export default function Home() {
                 ? 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
                 : getImageUrl(s.audioUrl);
 
+              const isPlaying = currentlyPlaying === s.id;
+
               return (
                 <motion.div 
                   key={s.id}
@@ -378,10 +381,29 @@ export default function Home() {
                       {s.category}
                     </div>
 
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/35 flex items-center justify-center text-white shadow-xl group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all duration-300">
-                        <Play className="w-4 h-4 fill-white text-white translate-x-0.5" />
-                      </div>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <motion.div 
+                        onClick={() => {
+                          const player = document.getElementById(`audio-player-${s.id}`) as HTMLAudioElement;
+                          if (player) {
+                            if (currentlyPlaying === s.id) {
+                              player.pause();
+                            } else {
+                              player.play();
+                            }
+                          }
+                        }}
+                        animate={{ scale: isPlaying ? [1, 1.08, 1] : 1 }}
+                        transition={{ repeat: isPlaying ? Infinity : 0, duration: 2 }}
+                        className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md border border-white/35 flex items-center justify-center text-white shadow-xl group-hover:bg-indigo-600 group-hover:border-indigo-500 transition-all duration-300 pointer-events-auto cursor-pointer"
+                        title={isPlaying ? 'Audio Streaming' : 'Play Sermon'}
+                      >
+                        {isPlaying ? (
+                          <Disc className="w-5 h-5 animate-spin text-white" />
+                        ) : (
+                          <Play className="w-4 h-4 fill-white text-white translate-x-0.5" />
+                        )}
+                      </motion.div>
                     </div>
 
                     <div className="absolute bottom-3 right-3 bg-slate-950/80 backdrop-blur-xs border border-white/10 text-white font-mono text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wide flex items-center gap-1">
@@ -420,9 +442,13 @@ export default function Home() {
                               <span>Sermon Audio Recording</span>
                             </span>
                           )}
+                          {isPlaying && <span className="text-indigo-600 animate-pulse text-[9px]">● STREAMING</span>}
                         </div>
                         <audio 
+                          id={`audio-player-${s.id}`}
                           controls 
+                          onPlay={() => setCurrentlyPlaying(s.id)}
+                          onPause={() => { if (currentlyPlaying === s.id) setCurrentlyPlaying(null); }}
                           className="w-full h-8 accent-indigo-600 rounded-lg" 
                           src={audioSource}
                           preload="none"

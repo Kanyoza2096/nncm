@@ -371,7 +371,8 @@ export const churchService = {
           console.warn('[Supabase Bridge] Fallback to local storage for sermons:', e);
         }
       }
-      return getList(KEYS.SERMONS, initialSermons);
+      const list = getList(KEYS.SERMONS, initialSermons);
+      return [...list].sort((a, b) => b.date.localeCompare(a.date));
     },
     getById: async (id: string): Promise<Sermon | null> => {
       if (shouldUseSupabase()) {
