@@ -9,7 +9,8 @@ import {
   UserCheck,
   Bell,
   RefreshCw,
-  Check
+  Check,
+  Eye
 } from 'lucide-react';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
@@ -28,6 +29,7 @@ export default function EventsCalendar() {
 
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<ChurchEvent | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   
   // Registration Form 
   const [regName, setRegName] = useState('');
@@ -169,9 +171,36 @@ export default function EventsCalendar() {
           ) : (
             events.map((e, index) => (
               <motion.div initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} key={e.id} className="bg-white border border-slate-100 rounded-3xl overflow-hidden hover:shadow-xl transition-all flex flex-col sm:flex-row h-full shadow-sm">
-                <div className="sm:w-2/5 h-48 sm:h-auto shrink-0 relative bg-slate-900 border-r border-slate-50">
-                  <img src={e.image} alt={e.title} className="w-full h-full object-cover" />
-                  <span className="absolute top-4 left-4 bg-indigo-600 text-white text-[9px] uppercase tracking-widest font-black px-3 py-1 rounded-full">{e.category}</span>
+                <div className="sm:w-2/5 h-64 sm:h-auto shrink-0 relative bg-slate-950 border-r border-slate-100 overflow-hidden group/event">
+                  {/* Blurred background copy to fill space without showing solid blanks */}
+                  <div className="absolute inset-0 select-none pointer-events-none">
+                    <img 
+                      src={e.image} 
+                      alt="" 
+                      className="w-full h-full object-cover blur-lg scale-110 opacity-40" 
+                    />
+                  </div>
+                  {/* Fully visible container image */}
+                  <img 
+                    src={e.image} 
+                    alt={e.title} 
+                    className="w-full h-full object-contain relative z-10 opacity-95 group-hover/event:scale-102 transition-transform duration-500" 
+                  />
+                  
+                  <span className="absolute top-4 left-4 bg-indigo-600 text-white text-[9px] uppercase tracking-widest font-black px-3 py-1 rounded-full z-20">{e.category}</span>
+
+                  {/* View full flyer button */}
+                  <button 
+                    type="button"
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      setLightboxImage(e.image);
+                    }}
+                    className="absolute top-4 right-4 bg-slate-950/85 hover:bg-indigo-600 border border-white/20 text-white p-1.5 rounded-full transition-colors z-20 flex items-center justify-center shadow-lg"
+                    title="View Full Flyer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div className="p-7 flex-1 flex flex-col justify-between">
                   <div>
@@ -215,6 +244,34 @@ export default function EventsCalendar() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Lightbox / Zoom Modal */}
+      {lightboxImage && (
+        <div 
+          onClick={() => setLightboxImage(null)}
+          className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out select-none animate-fade-in"
+        >
+          <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center justify-center">
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setLightboxImage(null)}
+              className="absolute -top-12 right-0 md:-right-12 bg-white/10 hover:bg-white/20 border border-white/20 text-white p-2 rounded-full transition-colors z-50 flex items-center justify-center cursor-pointer shadow-lg"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img 
+              src={lightboxImage} 
+              alt="Expanded view" 
+              className="max-w-full max-h-[80vh] md:max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <p className="text-white/40 text-xs mt-3 font-mono">Click anywhere outside to exit full screen</p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

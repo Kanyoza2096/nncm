@@ -23,7 +23,9 @@ import {
   ShieldCheck,
   User,
   Music,
-  Disc
+  Disc,
+  X,
+  Eye
 } from 'lucide-react';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
@@ -49,6 +51,7 @@ export default function Home() {
   const [devotional, setDevotional] = useState<Devotional | null>(null);
   const [prayers, setPrayers] = useState<PrayerCenterRequest[]>([]);
   const [leadership, setLeadership] = useState<UserType[]>([]);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   
   // Prayer Form
   const [formName, setFormName] = useState('');
@@ -368,18 +371,41 @@ export default function Home() {
                 >
                   {/* Thumbnail Cover with Play button overlay & Video duration style tag */}
                   <div className="h-48 relative overflow-hidden shrink-0 bg-slate-950">
+                    {/* Blurred background copy to fill space without showing solid blanks */}
+                    <div className="absolute inset-0 select-none pointer-events-none">
+                      <img 
+                        src={getImageUrl(s.coverImage)} 
+                        alt="" 
+                        className="w-full h-full object-cover blur-lg scale-110 opacity-40" 
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    {/* Fully visible container image */}
                     <img 
                       src={getImageUrl(s.coverImage)} 
                       alt={s.title} 
-                      className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" 
+                      className="w-full h-full object-contain relative z-10 opacity-90 group-hover:scale-102 transition-transform duration-500" 
                       referrerPolicy="no-referrer"
                     />
                     
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-40 z-10" />
 
-                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest text-slate-950 shadow-sm">
+                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest text-slate-950 shadow-sm z-20">
                       {s.category}
                     </div>
+
+                    {/* View full flyer button */}
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLightboxImage(getImageUrl(s.coverImage));
+                      }}
+                      className="absolute top-4 right-4 bg-slate-950/85 hover:bg-indigo-600 border border-white/20 text-white p-1.5 rounded-full transition-colors z-20 flex items-center justify-center shadow-lg"
+                      title="View Full Flyer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
 
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <motion.div 
@@ -506,11 +532,38 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: index * 0.15 }}
                 className="bg-slate-50 border border-slate-105 rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row h-full"
               >
-                <div className="sm:w-2/5 h-48 sm:h-auto shrink-0 relative bg-slate-900">
-                  <img src={e.image} alt={e.title} className="w-full h-full object-cover object-center" />
-                  <span className="absolute top-4 left-4 bg-indigo-600 text-white text-[9px] uppercase tracking-widest font-extrabold px-3 py-1 rounded-full">
+                <div className="sm:w-2/5 h-64 sm:h-auto shrink-0 relative bg-slate-950 overflow-hidden group/event">
+                  {/* Blurred background copy to fill space without showing solid blanks */}
+                  <div className="absolute inset-0 select-none pointer-events-none">
+                    <img 
+                      src={e.image} 
+                      alt="" 
+                      className="w-full h-full object-cover blur-lg scale-110 opacity-40" 
+                    />
+                  </div>
+                  {/* Fully visible container image */}
+                  <img 
+                    src={e.image} 
+                    alt={e.title} 
+                    className="w-full h-full object-contain relative z-10 opacity-95 group-hover/event:scale-102 transition-transform duration-500" 
+                  />
+                  
+                  <span className="absolute top-4 left-4 bg-indigo-600 text-white text-[9px] uppercase tracking-widest font-extrabold px-3 py-1 rounded-full z-20">
                     {e.category}
                   </span>
+
+                  {/* View full flyer button */}
+                  <button 
+                    type="button"
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      setLightboxImage(e.image);
+                    }}
+                    className="absolute top-4 right-4 bg-slate-950/85 hover:bg-indigo-600 border border-white/20 text-white p-1.5 rounded-full transition-colors z-20 flex items-center justify-center shadow-lg"
+                    title="View Full Flyer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
                   <div>
@@ -762,6 +815,33 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Lightbox / Zoom Modal */}
+      {lightboxImage && (
+        <div 
+          onClick={() => setLightboxImage(null)}
+          className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out select-none animate-fade-in"
+        >
+          <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center justify-center">
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setLightboxImage(null)}
+              className="absolute -top-12 right-0 md:-right-12 bg-white/10 hover:bg-white/20 border border-white/20 text-white p-2 rounded-full transition-colors z-50 flex items-center justify-center cursor-pointer shadow-lg"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img 
+              src={lightboxImage} 
+              alt="Expanded view" 
+              className="max-w-full max-h-[80vh] md:max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <p className="text-white/40 text-xs mt-3 font-mono">Click anywhere outside to exit full screen</p>
+          </div>
+        </div>
+      )}
 
     </div>
   );
