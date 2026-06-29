@@ -43,12 +43,6 @@ export const authService = {
     if (shouldUseSupabase()) {
       return supabaseService.auth.deleteUserProfile(id);
     }
-    const cached = localStorage.getItem(OFFLINE_KEY);
-    if (cached) {
-      // Note: This logic is slightly flawed for specific users as cached above is used per ID
-      // but getAllProfiles returns a fixed list and createUserProfile saves per ID.
-      // We'll just clear the specific item.
-      localStorage.removeItem(`${OFFLINE_KEY}_${id}`);
-    }
+    localStorage.removeItem(`${OFFLINE_KEY}_${id}`);
   }
 };

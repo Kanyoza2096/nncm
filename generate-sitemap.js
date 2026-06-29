@@ -5,11 +5,13 @@ import dotenv from 'dotenv';
 // Load environment variables from .env if present
 dotenv.config();
 
-// Use your exposed credentials safely at build time
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://iacefkmaacznavqjkelj.supabase.co';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhY2Vma21hYWN6bmF2cWprZWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg0NzgsImV4cCI6MjA5NzYxNDQ3OH0.T_Klz3ccS1Z7dPNDNw33NjZMUxdQGC_fZEUJGqb1a0Y';
+// Load environment variables safely
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder')
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 async function generate() {
   // 1. Static public routes from App.tsx
@@ -28,7 +30,7 @@ async function generate() {
   });
 
   try {
-    if (supabaseUrl && !supabaseUrl.includes('placeholder')) {
+    if (supabase) {
       // 2. Fetch dynamic blog_posts from Supabase table
       const { data: blog_posts, error: blog_postsError } = await supabase.from('blog_posts').select('id');
       if (!blog_postsError && blog_posts) {

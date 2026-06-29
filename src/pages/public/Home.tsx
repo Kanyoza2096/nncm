@@ -25,7 +25,9 @@ import {
   Music,
   Disc,
   X,
-  Eye
+  Eye,
+  Play,
+  Headphones
 } from 'lucide-react';
 import { useOrgSettings } from '../../hooks/useOrgSettings';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';

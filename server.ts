@@ -237,10 +237,10 @@ async function startServer() {
         xml += `  <url>\n    <loc>${fullUrl}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>${route === '' ? '1.0' : '0.8'}</priority>\n  </url>\n`;
       });
 
-      // Try to fetch dynamic pages from Supabase
+            // Try to fetch dynamic pages from Supabase
       try {
-        const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://iacefkmaacznavqjkelj.supabase.co';
-        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhY2Vma21hYWN6bmF2cWprZWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg0NzgsImV4cCI6MjA5NzYxNDQ3OH0.T_Klz3ccS1Z7dPNDNw33NjZMUxdQGC_fZEUJGqb1a0Y';
+        const supabaseUrl = process.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
         
         if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder')) {
           const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);

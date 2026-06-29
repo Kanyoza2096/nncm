@@ -85,7 +85,8 @@ export default function MemberRegistration() {
           occupation: 'Congregant',
           status: 'active',
           category: 'Local Resident',
-          churchGroup: churchGroup
+          churchGroup: churchGroup,
+          createdAt: Date.now()
         });
 
         setPass({ vid, name, group: churchGroup });

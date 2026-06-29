@@ -134,10 +134,10 @@ export default function Sermons() {
           </div>
         </div>
 
-        {/* Sermon Stream Cards - Styled like beautiful video items, but purely playing audio */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Sermon Audio List - Styled as elegant horizontal rows with cover photo on one side */}
+        <div className="space-y-6 max-w-4xl mx-auto">
           {filtered.length === 0 ? (
-            <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-slate-100 border-dashed">
+            <div className="py-20 text-center bg-white rounded-3xl border border-slate-100 border-dashed">
                <Music className="w-12 h-12 text-slate-200 mx-auto mb-3 animate-bounce" />
                <p className="text-slate-400 font-medium">No spiritual audio lessons match your current criteria.</p>
             </div>
@@ -153,11 +153,11 @@ export default function Sermons() {
               return (
                 <motion.div 
                   key={s.id}
-                  whileHover={{ y: -4 }}
-                  className="bg-white border border-slate-105 rounded-[2rem] overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full group shadow-sm"
+                  whileHover={{ y: -2 }}
+                  className="bg-white border border-slate-100 rounded-3xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row h-auto group shadow-xs"
                 >
-                  {/* Visual Thumbnail styled like a high-end video card */}
-                  <div className="h-52 relative bg-slate-950 overflow-hidden shrink-0">
+                  {/* Cover photo side (left side on sm screens and up) */}
+                  <div className="w-full sm:w-48 md:w-56 h-48 sm:h-auto shrink-0 relative bg-slate-950 overflow-hidden">
                     {/* Blurred background copy to fill space without showing solid blanks */}
                     <div className="absolute inset-0 select-none pointer-events-none">
                       <img 
@@ -178,11 +178,6 @@ export default function Sermons() {
                     {/* Dark gradient shadow overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-40 z-10" />
 
-                    {/* Department Tag */}
-                    <span className="absolute top-4 left-4 bg-white/95 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest text-slate-950 shadow-md z-20">
-                      {s.category}
-                    </span>
-
                     {/* View full flyer button */}
                     <button 
                       type="button"
@@ -190,15 +185,42 @@ export default function Sermons() {
                         e.stopPropagation();
                         setLightboxImage(getImageUrl(s.coverImage));
                       }}
-                      className="absolute top-4 right-4 bg-slate-950/85 hover:bg-indigo-600 border border-white/20 text-white p-1.5 rounded-full transition-colors z-20 flex items-center justify-center shadow-lg"
+                      className="absolute top-3 right-3 bg-slate-950/85 hover:bg-indigo-600 border border-white/20 text-white p-1.5 rounded-full transition-colors z-20 flex items-center justify-center shadow-lg cursor-pointer"
                       title="View Full Flyer"
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
+                  </div>
 
-                    {/* Styled as a video card: floating circular play icon overlay in the center */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <motion.div 
+                  {/* Clean Audio Information (Title, Preacher, Player, & Downloads) */}
+                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                          {s.category}
+                        </span>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <Calendar className="w-3.5 h-3.5 text-slate-350" />
+                          <span>{s.date}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                          <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center border border-slate-150">
+                            <User className="w-3 text-slate-500" />
+                          </div>
+                          <span>{s.pastor}</span>
+                        </div>
+                      </div>
+                      
+                      <h3 className="font-extrabold text-[#020617] text-lg leading-snug tracking-tight hover:text-indigo-650 transition-colors line-clamp-2">
+                        {s.title}
+                      </h3>
+                    </div>
+
+                    {/* Clean Audio Playback Section */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-slate-50 border border-slate-100 p-3 rounded-2xl">
+                      {/* Play/Pause Button */}
+                      <button 
+                        type="button"
                         onClick={() => {
                           const player = document.getElementById(`audio-player-${s.id}`) as HTMLAudioElement;
                           if (player) {
@@ -209,83 +231,56 @@ export default function Sermons() {
                             }
                           }
                         }}
-                        animate={{ scale: isPlaying ? [1, 1.08, 1] : 1 }}
-                        transition={{ repeat: isPlaying ? Infinity : 0, duration: 2 }}
-                        className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-2xl group-hover:bg-indigo-600/95 group-hover:border-indigo-500 transition-all duration-300 pointer-events-auto cursor-pointer"
-                        title={isPlaying ? 'Audio Streaming' : 'Play Sermon'}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-sm shrink-0 cursor-pointer ${
+                          isPlaying ? 'bg-indigo-600 animate-pulse' : 'bg-slate-900 hover:bg-indigo-600'
+                        }`}
+                        title={isPlaying ? 'Pause Audio' : 'Play Audio'}
                       >
                         {isPlaying ? (
-                          <Disc className="w-6 h-6 animate-spin text-white" />
+                          <Disc className="w-5 h-5 animate-spin text-white" />
                         ) : (
-                          <Play className="w-6 h-6 fill-white text-white translate-x-0.5" />
+                          <Play className="w-4 h-4 fill-white text-white translate-x-0.5" />
                         )}
-                      </motion.div>
-                    </div>
+                      </button>
 
-                    {/* Video-Style Duration indicator showing file is high-quality audio */}
-                    <div className="absolute bottom-4 right-4 bg-slate-950/80 backdrop-blur-xs border border-white/10 text-white font-mono text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wide flex items-center gap-1.5">
-                      <Headphones className="w-3 h-3 text-indigo-400" />
-                      <span>{isDemo ? 'Demo Playback' : 'Audio Playback'}</span>
-                    </div>
-                  </div>
-
-                  {/* Clean, Simple Sermon Information (Title & Preacher Only - No notes, PDFs, or excerpts) */}
-                  <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <Calendar className="w-3.5 h-3.5 text-slate-350" />
-                        <span>{s.date}</span>
+                      {/* Native HTML5 Audio Player */}
+                      <div className="flex-1 min-w-0">
+                        <audio 
+                          id={`audio-player-${s.id}`}
+                          controls 
+                          onPlay={() => setCurrentlyPlaying(s.id)}
+                          onPause={() => { if (currentlyPlaying === s.id) setCurrentlyPlaying(null); }}
+                          className="w-full h-8 accent-indigo-600 rounded-lg" 
+                          src={audioSource}
+                          preload="none"
+                        >
+                          Your browser does not support audio playback.
+                        </audio>
                       </div>
-                      
-                      <h3 className="font-extrabold text-[#020617] text-lg leading-snug tracking-tight hover:text-indigo-650 transition-colors line-clamp-2">
-                        {s.title}
-                      </h3>
 
-                      <div className="flex items-center gap-2 mt-2">
-                         <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center border border-slate-150">
-                            <User className="w-3.5 h-3.5 text-slate-500" />
-                         </div>
-                         <span className="text-xs font-bold text-slate-600">{s.pastor}</span>
-                      </div>
-                    </div>
-
-                    {/* Clean Audio Playback Section */}
-                    <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-2">
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
-                        {isDemo ? (
-                          <span className="flex items-center gap-1 text-amber-600 font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            <span>Demo Audio (6-Min Instrumental)</span>
+                      {/* Live status Indicator */}
+                      <div className="flex items-center gap-2 justify-between sm:justify-start">
+                        {isPlaying ? (
+                          <span className="text-indigo-600 font-extrabold text-[9px] animate-pulse whitespace-nowrap bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                            ● STREAMING
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-emerald-600 font-extrabold">
-                            <Music className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span>Sermon Audio Recording</span>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
+                            <Headphones className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <span>{isDemo ? 'Demo Playback' : 'Audio Playback'}</span>
                           </span>
                         )}
-                        {isPlaying && <span className="text-indigo-600 animate-pulse text-[9px]">● STREAMING</span>}
                       </div>
-                      <audio 
-                        id={`audio-player-${s.id}`}
-                        controls 
-                        onPlay={() => setCurrentlyPlaying(s.id)}
-                        onPause={() => { if (currentlyPlaying === s.id) setCurrentlyPlaying(null); }}
-                        className="w-full h-8 accent-indigo-600 rounded-lg" 
-                        src={audioSource}
-                        preload="none"
-                      >
-                        Your device does not support inline audio playback.
-                      </audio>
                     </div>
 
                     {/* Well-implemented direct background download */}
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div className="pt-2 flex items-center justify-between text-xs">
                       <span className="text-[10px] text-slate-400 font-bold font-mono uppercase tracking-wider">
                         {s.downloadsCount} downloads
                       </span>
                       <button 
                         onClick={() => handleDownloadAudio(s)}
-                        className="inline-flex items-center gap-2 px-4.5 py-2.5 bg-indigo-600 hover:bg-[#020617] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md shadow-indigo-600/15 active:scale-95"
+                        className="inline-flex items-center gap-2 px-4.5 py-2.5 bg-indigo-600 hover:bg-[#020617] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md shadow-indigo-600/15 active:scale-95 cursor-pointer"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>Download MP3</span>

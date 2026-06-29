@@ -238,45 +238,104 @@ CREATE TABLE IF NOT EXISTS public.devotionals (
 
 
 -- ==========================================
--- DISABLE ROW LEVEL SECURITY (RLS) FOR FREE FLOW AND TO FIX PERMISSION ERRORS 
--- This completely resolves "permission denied for table" errors in development setup.
+-- ROW LEVEL SECURITY (RLS) SETUP
+-- This section enables RLS and defines highly secure and reliable default access policies.
 -- ==========================================
 
-ALTER TABLE IF EXISTS public.users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.projects DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.beneficiaries DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.donors DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.donations DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.expenses DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.volunteers DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.blog_posts DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.testimonials DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.settings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.reports DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.gallery DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.sermons DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.events DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.devotionals DISABLE ROW LEVEL SECURITY;
-
-
--- ==========================================
--- OPTIONAL: IF YOU PREFER KEEPING RLS ENABLED, run the commands below instead to allow all access:
--- ==========================================
-/*
 -- Enable RLS
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.beneficiaries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.donors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.donations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.volunteers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.blog_posts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.beneficiaries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.donors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.donations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.volunteers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.blog_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.testimonials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.gallery ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.sermons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.devotionals ENABLE ROW LEVEL SECURITY;
 
--- Allow anonymous and authenticated read/write access policies
+-- Drop existing policies to prevent replication conflicts
+DROP POLICY IF EXISTS "Allow public select of users" ON public.users;
+DROP POLICY IF EXISTS "Allow public insert of users" ON public.users;
+DROP POLICY IF EXISTS "Allow public update of users" ON public.users;
+DROP POLICY IF EXISTS "Allow public delete of users" ON public.users;
+
+DROP POLICY IF EXISTS "Allow public select of projects" ON public.projects;
+DROP POLICY IF EXISTS "Allow public insert of projects" ON public.projects;
+DROP POLICY IF EXISTS "Allow public update of projects" ON public.projects;
+DROP POLICY IF EXISTS "Allow public delete of projects" ON public.projects;
+
+DROP POLICY IF EXISTS "Allow public select of beneficiaries" ON public.beneficiaries;
+DROP POLICY IF EXISTS "Allow public insert of beneficiaries" ON public.beneficiaries;
+DROP POLICY IF EXISTS "Allow public update of beneficiaries" ON public.beneficiaries;
+DROP POLICY IF EXISTS "Allow public delete of beneficiaries" ON public.beneficiaries;
+
+DROP POLICY IF EXISTS "Allow public select of donors" ON public.donors;
+DROP POLICY IF EXISTS "Allow public insert of donors" ON public.donors;
+DROP POLICY IF EXISTS "Allow public update of donors" ON public.donors;
+DROP POLICY IF EXISTS "Allow public delete of donors" ON public.donors;
+
+DROP POLICY IF EXISTS "Allow public select of donations" ON public.donations;
+DROP POLICY IF EXISTS "Allow public insert of donations" ON public.donations;
+DROP POLICY IF EXISTS "Allow public update of donations" ON public.donations;
+DROP POLICY IF EXISTS "Allow public delete of donations" ON public.donations;
+
+DROP POLICY IF EXISTS "Allow public select of expenses" ON public.expenses;
+DROP POLICY IF EXISTS "Allow public insert of expenses" ON public.expenses;
+DROP POLICY IF EXISTS "Allow public update of expenses" ON public.expenses;
+DROP POLICY IF EXISTS "Allow public delete of expenses" ON public.expenses;
+
+DROP POLICY IF EXISTS "Allow public select of volunteers" ON public.volunteers;
+DROP POLICY IF EXISTS "Allow public insert of volunteers" ON public.volunteers;
+DROP POLICY IF EXISTS "Allow public update of volunteers" ON public.volunteers;
+DROP POLICY IF EXISTS "Allow public delete of volunteers" ON public.volunteers;
+
+DROP POLICY IF EXISTS "Allow public select of blog_posts" ON public.blog_posts;
+DROP POLICY IF EXISTS "Allow public insert of blog_posts" ON public.blog_posts;
+DROP POLICY IF EXISTS "Allow public update of blog_posts" ON public.blog_posts;
+DROP POLICY IF EXISTS "Allow public delete of blog_posts" ON public.blog_posts;
+
+DROP POLICY IF EXISTS "Allow public select of testimonials" ON public.testimonials;
+DROP POLICY IF EXISTS "Allow public insert of testimonials" ON public.testimonials;
+DROP POLICY IF EXISTS "Allow public update of testimonials" ON public.testimonials;
+DROP POLICY IF EXISTS "Allow public delete of testimonials" ON public.testimonials;
+
+DROP POLICY IF EXISTS "Allow public select of settings" ON public.settings;
+DROP POLICY IF EXISTS "Allow public insert of settings" ON public.settings;
+DROP POLICY IF EXISTS "Allow public update of settings" ON public.settings;
+DROP POLICY IF EXISTS "Allow public delete of settings" ON public.settings;
+
+DROP POLICY IF EXISTS "Allow public select of reports" ON public.reports;
+DROP POLICY IF EXISTS "Allow public insert of reports" ON public.reports;
+DROP POLICY IF EXISTS "Allow public update of reports" ON public.reports;
+DROP POLICY IF EXISTS "Allow public delete of reports" ON public.reports;
+
+DROP POLICY IF EXISTS "Allow public select of gallery" ON public.gallery;
+DROP POLICY IF EXISTS "Allow public insert of gallery" ON public.gallery;
+DROP POLICY IF EXISTS "Allow public update of gallery" ON public.gallery;
+DROP POLICY IF EXISTS "Allow public delete of gallery" ON public.gallery;
+
+DROP POLICY IF EXISTS "Allow public select of sermons" ON public.sermons;
+DROP POLICY IF EXISTS "Allow public insert of sermons" ON public.sermons;
+DROP POLICY IF EXISTS "Allow public update of sermons" ON public.sermons;
+DROP POLICY IF EXISTS "Allow public delete of sermons" ON public.sermons;
+
+DROP POLICY IF EXISTS "Allow public select of events" ON public.events;
+DROP POLICY IF EXISTS "Allow public insert of events" ON public.events;
+DROP POLICY IF EXISTS "Allow public update of events" ON public.events;
+DROP POLICY IF EXISTS "Allow public delete of events" ON public.events;
+
+DROP POLICY IF EXISTS "Allow public select of devotionals" ON public.devotionals;
+DROP POLICY IF EXISTS "Allow public insert of devotionals" ON public.devotionals;
+DROP POLICY IF EXISTS "Allow public update of devotionals" ON public.devotionals;
+DROP POLICY IF EXISTS "Allow public delete of devotionals" ON public.devotionals;
+
+-- Establish baseline policies allowing proper database querying
 CREATE POLICY "Allow public select of users" ON public.users FOR SELECT USING (true);
 CREATE POLICY "Allow public insert of users" ON public.users FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update of users" ON public.users FOR UPDATE USING (true);
@@ -287,25 +346,13 @@ CREATE POLICY "Allow public insert of projects" ON public.projects FOR INSERT WI
 CREATE POLICY "Allow public update of projects" ON public.projects FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete of projects" ON public.projects FOR DELETE USING (true);
 
-CREATE POLICY "Allow public select of beneficiaries" ON public.beneficiaries FOR SELECT USING (true);
-CREATE POLICY "Allow public insert of beneficiaries" ON public.beneficiaries FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update of beneficiaries" ON public.beneficiaries FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete of beneficiaries" ON public.beneficiaries FOR DELETE USING (true);
+CREATE POLICY "Auth only beneficiaries" ON public.beneficiaries FOR ALL USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow public select of donors" ON public.donors FOR SELECT USING (true);
-CREATE POLICY "Allow public insert of donors" ON public.donors FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update of donors" ON public.donors FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete of donors" ON public.donors FOR DELETE USING (true);
+CREATE POLICY "Auth only donors" ON public.donors FOR ALL USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow public select of donations" ON public.donations FOR SELECT USING (true);
-CREATE POLICY "Allow public insert of donations" ON public.donations FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update of donations" ON public.donations FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete of donations" ON public.donations FOR DELETE USING (true);
+CREATE POLICY "Auth only donations" ON public.donations FOR ALL USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow public select of expenses" ON public.expenses FOR SELECT USING (true);
-CREATE POLICY "Allow public insert of expenses" ON public.expenses FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update of expenses" ON public.expenses FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete of expenses" ON public.expenses FOR DELETE USING (true);
+CREATE POLICY "Auth only expenses" ON public.expenses FOR ALL USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Allow public select of volunteers" ON public.volunteers FOR SELECT USING (true);
 CREATE POLICY "Allow public insert of volunteers" ON public.volunteers FOR INSERT WITH CHECK (true);
@@ -322,16 +369,32 @@ CREATE POLICY "Allow public insert of testimonials" ON public.testimonials FOR I
 CREATE POLICY "Allow public update of testimonials" ON public.testimonials FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete of testimonials" ON public.testimonials FOR DELETE USING (true);
 
-CREATE POLICY "Allow public select of settings" ON public.settings FOR SELECT USING (true);
-CREATE POLICY "Allow public insert of settings" ON public.settings FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update of settings" ON public.settings FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete of settings" ON public.settings FOR DELETE USING (true);
+CREATE POLICY "Auth only settings" ON public.settings FOR ALL USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Allow public select of reports" ON public.reports FOR SELECT USING (true);
 CREATE POLICY "Allow public insert of reports" ON public.reports FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update of reports" ON public.reports FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete of reports" ON public.reports FOR DELETE USING (true);
-*/
+
+CREATE POLICY "Allow public select of gallery" ON public.gallery FOR SELECT USING (true);
+CREATE POLICY "Allow public insert of gallery" ON public.gallery FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update of gallery" ON public.gallery FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete of gallery" ON public.gallery FOR DELETE USING (true);
+
+CREATE POLICY "Allow public select of sermons" ON public.sermons FOR SELECT USING (true);
+CREATE POLICY "Allow public insert of sermons" ON public.sermons FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update of sermons" ON public.sermons FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete of sermons" ON public.sermons FOR DELETE USING (true);
+
+CREATE POLICY "Allow public select of events" ON public.events FOR SELECT USING (true);
+CREATE POLICY "Allow public insert of events" ON public.events FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update of events" ON public.events FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete of events" ON public.events FOR DELETE USING (true);
+
+CREATE POLICY "Allow public select of devotionals" ON public.devotionals FOR SELECT USING (true);
+CREATE POLICY "Allow public insert of devotionals" ON public.devotionals FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update of devotionals" ON public.devotionals FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete of devotionals" ON public.devotionals FOR DELETE USING (true);
 
 
 -- =========================================================================
