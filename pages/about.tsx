@@ -44,13 +44,14 @@ function createBuildClient() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url || !key) {
-    throw new Error(
-      'Missing Supabase environment variables. ' +
-      'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
-    )
+    console.warn('[Build] Missing Supabase env vars — page will render with empty data.')
   }
 
-  return createClient(url, key, { auth: { persistSession: false } })
+  return createClient(
+    url || 'https://placeholder.supabase.co',
+    key || 'placeholder_anon_key',
+    { auth: { persistSession: false } }
+  )
 }
 
 function fromDB(obj: Record<string, unknown>): Record<string, unknown> {

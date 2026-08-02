@@ -135,7 +135,7 @@ export default function AdminBlogPage() {
                       </td>
                       <td className="px-6 py-5"><span className="inline-flex px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-wider">{post.category || '—'}</span></td>
                       <td className="px-6 py-5"><span className={`inline-flex px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${post.published ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{post.published ? 'Published' : 'Draft'}</span></td>
-                      <td className="px-6 py-5 text-xs text-slate-400 font-mono">{post.publishedAt ? new Date(Number(post.publishedAt)).toLocaleDateString() : '—'}</td>
+                      <td className="px-6 py-5 text-xs text-slate-400 font-mono">{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : '—'}</td>
                       <td className="px-6 py-5 text-right">
                         <div className="flex justify-end gap-2">
                           <button onClick={() => handleEdit(post)} className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400" aria-label={`Edit ${post.title}`}><Edit2 className="w-3.5 h-3.5" /></button>

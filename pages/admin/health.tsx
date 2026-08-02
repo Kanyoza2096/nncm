@@ -66,12 +66,13 @@ export default function AdminHealthPage() {
     // Check Gemini
     try {
       const apiUrl = `${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/gemini/chat`
+      const geminiStart = Date.now()
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [{ role: 'user', content: 'ping' }], systemInstruction: 'Reply with just "pong"' }),
       })
-      results.push({ name: 'Gemini AI', status: response.ok ? 'online' : 'offline', latency: Date.now() - Date.now() })
+      results.push({ name: 'Gemini AI', status: response.ok ? 'online' : 'offline', latency: Date.now() - geminiStart })
     } catch {
       results.push({ name: 'Gemini AI', status: 'offline' })
     }

@@ -155,7 +155,7 @@ export default function AdminSermonsPage() {
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
                           <div className="w-14 h-10 rounded-xl bg-slate-900 overflow-hidden shrink-0">
-                            <img src={getImageUrl(s.coverImage)} alt="" className="w-full h-full object-cover opacity-70" />
+                            <img src={s.coverImage ? getImageUrl(s.coverImage) : '/logo.png'} alt="" className="w-full h-full object-cover opacity-70" />
                           </div>
                           <div>
                             <p className="text-sm font-bold text-slate-900 line-clamp-1">{s.title}</p>
