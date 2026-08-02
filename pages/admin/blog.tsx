@@ -61,7 +61,12 @@ export default function AdminBlogPage() {
         await blogService.updateBlogPost(editingPost.id, formData)
         toast.success('Post updated.')
       } else {
-        await blogService.createBlogPost(formData)
+        await blogService.createBlogPost({
+          ...formData,
+          authorId: 'admin',
+          createdAt: Date.now(),
+          publishedAt: formData.published ? Date.now() : 0,
+        })
         toast.success('Post published.')
       }
       setShowForm(false); setEditingPost(null); setFormData(EMPTY_FORM); fetchPosts()
