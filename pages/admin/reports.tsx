@@ -43,7 +43,8 @@ export default function AdminReportsPage() {
     try {
       await reportService.createReport({
         title: formData.title, type: formData.type,
-        date: new Date().toISOString(), size: '0 KB', url: ''
+        date: new Date().toISOString(), size: '0 KB', url: '',
+        createdAt: Date.now()
       })
       toast.success('Report generated.')
       setShowForm(false); setFormData(EMPTY_FORM); fetchReports()
