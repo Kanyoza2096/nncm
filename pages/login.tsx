@@ -1,7 +1,8 @@
 // pages/login.tsx
 // ============================================================================
 // NNCM Church Portal — Staff Login
-// Next.js static export with SEO and accessibility upgrades.
+// Bug fix: removed getStaticProps (caused hydration mismatch / duplicate render).
+// Now uses useOrgSettings() for client-side org data, matching every other page.
 // ============================================================================
 
 import { useState, useEffect } from 'react'
@@ -21,74 +22,38 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useOrgSettings } from '@/hooks/useOrgSettings'
 import { toast } from 'sonner'
 import { getImageUrl } from '@/lib/image-utils'
-import { createClient } from '@supabase/supabase-js'
-
-// ============================================================================
-// STATIC PROPS — Fetch org name and logo at build time
-// ============================================================================
-
-export async function getStaticProps() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  let orgName = 'NNCM Portal'
-  let orgLogo = ''
-
-  if (url && key) {
-    try {
-      const client = createClient(url, key, { auth: { persistSession: false } })
-      const { data } = await client
-        .from('settings')
-        .select('organization_name, org_name, organization_logo, org_logo')
-        .limit(1)
-        .maybeSingle()
-
-      if (data) {
-        const item = data as Record<string, string>
-        orgName = item.organization_name || item.org_name || orgName
-        orgLogo = item.organization_logo || item.org_logo || ''
-      }
-    } catch {
-      // Use defaults
-    }
-  }
-
-  return {
-    props: {
-      settings: { orgName, orgLogo },
-    },
-  }
-}
 
 // ============================================================================
 // PAGE COMPONENT
 // ============================================================================
 
-interface LoginPageProps {
-  settings: {
-    orgName: string
-    orgLogo: string
-  }
-}
-
-export default function LoginPage({ settings }: LoginPageProps) {
+export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [processing, setProcessing] = useState(false)
   const { login, user } = useAuth()
+  const { settings } = useOrgSettings()
   const router = useRouter()
 
-  // Redirect destination after login
-  const from = (router.query.from as string) || '/admin'
+  // Redirect destination after login — wait for router to be ready
+  // so we don't read an empty query object on first render.
+  const [from, setFrom] = useState('/admin')
 
-  // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (router.isReady) {
+      setFrom((router.query.from as string) || '/admin')
+    }
+  }, [router.isReady, router.query.from])
+
+  // Redirect if already logged in (only after router is ready to avoid double redirect)
+  useEffect(() => {
+    if (user && router.isReady) {
       router.replace(from)
     }
-  }, [user, router, from])
+  }, [user, router.isReady, from])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
