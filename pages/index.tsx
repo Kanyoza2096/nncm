@@ -1136,14 +1136,14 @@ export default function HomePage(props: HomePageProps) {
               }
             />
 
-            {events.length === 0 ? (
+            {initialEvents.length === 0 ? (
               <EmptyState
                 message="No upcoming events scheduled. Check back soon for conferences, crusades, and fellowship gatherings."
                 icon={<Calendar className="w-8 h-8 text-slate-300" aria-hidden="true" />}
               />
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {events.map((event, index) => (
+                {initialEvents.map((event, index) => (
                   <motion.article
                     key={event.id}
                     initial={{ opacity: 0, scale: 0.98 }}
