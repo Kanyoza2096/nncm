@@ -15,7 +15,7 @@ export default function Document() {
         <meta name="theme-color" content="#4f46e5" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
 
         {/* Preconnect to Supabase */}
         {process.env.NEXT_PUBLIC_SUPABASE_URL && (
