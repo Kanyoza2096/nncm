@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic'
 import { AuthProvider } from '@/hooks/useAuth'
 import { OrgSettingsProvider } from '@/hooks/useOrgSettings'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import PublicLayout from '@/components/layout/PublicLayout'  // ← ADD THIS
 import { Toaster } from 'sonner'
 import '@/styles/globals.css'
 
@@ -30,15 +31,17 @@ export default function App({ Component, pageProps }: AppProps) {
     <ErrorBoundary>
       <AuthProvider>
         <OrgSettingsProvider>
-          {isClient ? (
-            <>
+          <PublicLayout>  {/* ← WRAP EVERYTHING IN LAYOUT */}
+            {isClient ? (
+              <>
+                <Component {...pageProps} />
+                <PWAInstallPrompt />
+                <Toaster position="top-right" richColors expand closeButton />
+              </>
+            ) : (
               <Component {...pageProps} />
-              <PWAInstallPrompt />
-              <Toaster position="top-right" richColors expand closeButton />
-            </>
-          ) : (
-            <Component {...pageProps} />
-          )}
+            )}
+          </PublicLayout>
         </OrgSettingsProvider>
       </AuthProvider>
     </ErrorBoundary>
