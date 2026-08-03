@@ -113,7 +113,7 @@ export const getStaticProps: GetStaticProps<TransparencyPageProps> = async () =>
   }
 }
 
-async function fetchExpenses(client: ReturnType<typeof createClient>) {
+async function fetchExpenses(client: any) {
   const { data, error } = await client
     .from('expenses')
     .select('amount, date')
@@ -126,7 +126,7 @@ async function fetchExpenses(client: ReturnType<typeof createClient>) {
   return data || []
 }
 
-async function fetchCount(client: ReturnType<typeof createClient>, table: string): Promise<number> {
+async function fetchCount(client: any, table: string): Promise<number> {
   const { count, error } = await client
     .from(table)
     .select('*', { count: 'exact', head: true })
@@ -139,7 +139,7 @@ async function fetchCount(client: ReturnType<typeof createClient>, table: string
   return count || 0
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

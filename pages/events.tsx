@@ -88,7 +88,7 @@ export const getStaticProps: GetStaticProps<EventsPageProps> = async () => {
   }
 }
 
-async function fetchEvents(client: ReturnType<typeof createClient>): Promise<ChurchEvent[]> {
+async function fetchEvents(client: any): Promise<ChurchEvent[]> {
   const tables = ['events', 'nncm_events', 'church_events']
 
   for (const table of tables) {
@@ -109,7 +109,7 @@ async function fetchEvents(client: ReturnType<typeof createClient>): Promise<Chu
   return []
 }
 
-async function fetchSettings(client: ReturnType<typeof createClient>) {
+async function fetchSettings(client: any) {
   const defaults = {
     orgName: 'New Nature In Christ Ministry',
     orgAddress: 'Zomba, Malawi',

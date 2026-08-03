@@ -72,7 +72,7 @@ export const getStaticProps: GetStaticProps<PrayerPageProps> = async () => {
   }
 }
 
-async function fetchPrayers(client: ReturnType<typeof createClient>): Promise<PrayerCenterRequest[]> {
+async function fetchPrayers(client: any): Promise<PrayerCenterRequest[]> {
   const { data, error } = await client
     .from('prayer_requests')
     .select('*')
@@ -92,7 +92,7 @@ async function fetchPrayers(client: ReturnType<typeof createClient>): Promise<Pr
   })) as PrayerCenterRequest[]
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

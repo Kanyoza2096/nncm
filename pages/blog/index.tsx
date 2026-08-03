@@ -87,7 +87,7 @@ export const getStaticProps: GetStaticProps<BlogPageProps> = async () => {
   }
 }
 
-async function fetchPosts(client: ReturnType<typeof createClient>): Promise<BlogPost[]> {
+async function fetchPosts(client: any): Promise<BlogPost[]> {
   const { data, error } = await client
     .from('blog_posts')
     .select('*')
@@ -109,7 +109,7 @@ async function fetchPosts(client: ReturnType<typeof createClient>): Promise<Blog
   })
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

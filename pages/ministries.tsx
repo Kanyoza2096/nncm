@@ -67,7 +67,7 @@ export const getStaticProps: GetStaticProps<MinistriesPageProps> = async () => {
   }
 }
 
-async function fetchMinistries(client: ReturnType<typeof createClient>): Promise<MinistryGroup[]> {
+async function fetchMinistries(client: any): Promise<MinistryGroup[]> {
   const { data, error } = await client
     .from('ministries')
     .select('*')
@@ -87,7 +87,7 @@ async function fetchMinistries(client: ReturnType<typeof createClient>): Promise
   })) as MinistryGroup[]
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

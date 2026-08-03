@@ -67,7 +67,7 @@ export const getStaticProps: GetStaticProps<ProjectsPageProps> = async () => {
   }
 }
 
-async function fetchProjects(client: ReturnType<typeof createClient>): Promise<Project[]> {
+async function fetchProjects(client: any): Promise<Project[]> {
   const { data, error } = await client
     .from('projects')
     .select('*')
@@ -87,7 +87,7 @@ async function fetchProjects(client: ReturnType<typeof createClient>): Promise<P
   })) as Project[]
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

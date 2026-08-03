@@ -114,7 +114,7 @@ export const getStaticProps: GetStaticProps<BlogDetailProps> = async ({ params }
 }
 
 async function fetchPost(
-  client: ReturnType<typeof createClient>,
+  client: any,
   id: string
 ): Promise<BlogPost | null> {
   const { data, error } = await client
@@ -134,7 +134,7 @@ async function fetchPost(
   } as BlogPost
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

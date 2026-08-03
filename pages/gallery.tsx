@@ -74,7 +74,7 @@ export const getStaticProps: GetStaticProps<GalleryPageProps> = async () => {
   }
 }
 
-async function fetchGallery(client: ReturnType<typeof createClient>): Promise<GalleryImage[]> {
+async function fetchGallery(client: any): Promise<GalleryImage[]> {
   // Try database tables first (mirrors supabaseService.church.gallery.getAll())
   const candidateTables = ['gallery', 'nncm_gallery', 'gallery_images']
 
@@ -137,7 +137,7 @@ async function fetchGallery(client: ReturnType<typeof createClient>): Promise<Ga
   return []
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

@@ -174,7 +174,7 @@ function fromDB(obj: Record<string, unknown>): Record<string, unknown> {
 // BUILD-TIME DATA FETCHERS
 // ============================================================================
 
-async function fetchSermons(client: ReturnType<typeof createClient>): Promise<Sermon[]> {
+async function fetchSermons(client: any): Promise<Sermon[]> {
   const tables = ['sermons', 'nncm_sermons']
 
   for (const table of tables) {
@@ -195,7 +195,7 @@ async function fetchSermons(client: ReturnType<typeof createClient>): Promise<Se
   throw new Error(`Sermons: no data found in tables [${tables.join(', ')}]`)
 }
 
-async function fetchEvents(client: ReturnType<typeof createClient>): Promise<ChurchEvent[]> {
+async function fetchEvents(client: any): Promise<ChurchEvent[]> {
   const tables = ['events', 'nncm_events', 'church_events']
   const today = new Date().toISOString().split('T')[0]
 
@@ -219,7 +219,7 @@ async function fetchEvents(client: ReturnType<typeof createClient>): Promise<Chu
   return [] // No upcoming events is valid
 }
 
-async function fetchDevotional(client: ReturnType<typeof createClient>): Promise<Devotional | null> {
+async function fetchDevotional(client: any): Promise<Devotional | null> {
   const today = new Date().toISOString().split('T')[0]
   const tables = ['devotionals', 'nncm_devotionals', 'church_devotionals']
 
@@ -251,7 +251,7 @@ async function fetchDevotional(client: ReturnType<typeof createClient>): Promise
   return null
 }
 
-async function fetchPrayers(client: ReturnType<typeof createClient>): Promise<PrayerCenterRequest[]> {
+async function fetchPrayers(client: any): Promise<PrayerCenterRequest[]> {
   const { data, error } = await client
     .from('prayer_requests')
     .select('*')
@@ -273,7 +273,7 @@ async function fetchPrayers(client: ReturnType<typeof createClient>): Promise<Pr
   })) as PrayerCenterRequest[]
 }
 
-async function fetchLeadership(client: ReturnType<typeof createClient>): Promise<UserType[]> {
+async function fetchLeadership(client: any): Promise<UserType[]> {
   const { data, error } = await client
     .from('users')
     .select('*')
@@ -289,7 +289,7 @@ async function fetchLeadership(client: ReturnType<typeof createClient>): Promise
   return (data || []).map((item) => fromDB(item)) as UserType[]
 }
 
-async function fetchSettings(client: ReturnType<typeof createClient>): Promise<ChurchSettings> {
+async function fetchSettings(client: any): Promise<ChurchSettings> {
   const { data, error } = await client
     .from('settings')
     .select('*')

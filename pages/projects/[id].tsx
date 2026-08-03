@@ -104,7 +104,7 @@ export const getStaticProps: GetStaticProps<ProjectDetailProps> = async ({ param
 }
 
 async function fetchProject(
-  client: ReturnType<typeof createClient>,
+  client: any,
   id: string
 ): Promise<Project | null> {
   const { data, error } = await client
@@ -125,7 +125,7 @@ async function fetchProject(
   } as Project
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

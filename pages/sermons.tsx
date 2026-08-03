@@ -111,7 +111,7 @@ export const getStaticProps: GetStaticProps<SermonsPageProps> = async () => {
   }
 }
 
-async function fetchSermons(client: ReturnType<typeof createClient>): Promise<Sermon[]> {
+async function fetchSermons(client: any): Promise<Sermon[]> {
   const tables = ['sermons', 'nncm_sermons']
 
   for (const table of tables) {
@@ -131,7 +131,7 @@ async function fetchSermons(client: ReturnType<typeof createClient>): Promise<Se
   throw new Error(`No sermons found in tables [${tables.join(', ')}]`)
 }
 
-async function fetchOrgName(client: ReturnType<typeof createClient>): Promise<string> {
+async function fetchOrgName(client: any): Promise<string> {
   try {
     const { data, error } = await client
       .from('settings')

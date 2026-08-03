@@ -137,7 +137,7 @@ export const getStaticProps: GetStaticProps<LeadershipPageProps> = async () => {
 }
 
 async function fetchTeamMembers(
-  client: ReturnType<typeof createClient>
+  client: any
 ): Promise<TeamLeader[]> {
   const { data, error } = await client
     .from('users')
@@ -173,7 +173,7 @@ async function fetchTeamMembers(
     .filter((member) => member.role.toLowerCase() !== 'pastor' || member.name.toLowerCase().includes('mkandawire') === false)
 }
 
-async function fetchSettings(client: ReturnType<typeof createClient>) {
+async function fetchSettings(client: any) {
   const defaults = {
     orgName: 'New Nature In Christ Ministry',
     orgAddress: 'Zomba, Malawi',
