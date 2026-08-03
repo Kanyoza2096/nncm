@@ -776,7 +776,7 @@ export default function HomePage(props: HomePageProps) {
               transition={{ duration: 0.6 }}
               className="inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-300 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border border-indigo-500/20 mb-8"
             >
-              <Flame className="w-3.5 h-3.5 text-amber-500 animate-pulse" aria-hidden="true" />
+              <span className="text-amber-500 animate-pulse text-sm" aria-hidden="true">🔥</span>
               {settings.motto}
             </motion.div>
 
