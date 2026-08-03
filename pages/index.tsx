@@ -15,10 +15,6 @@
 //  • Type-safe — no 'any' in component code
 //  • Keyboard-navigable audio player
 // ============================================================================
-// pages/index.tsx
-// ============================================================================
-// NNCM Church Portal — Homepage
-// ============================================================================
 
 import { useState, useEffect, useCallback } from 'react'
 import { GetStaticProps } from 'next'
@@ -33,27 +29,30 @@ import type { Sermon, ChurchEvent, Devotional, PrayerCenterRequest, User as User
 
 // ─── LUCIDE ICONS ──────────────────────────────────────────────
 import {
-  BookOpen,           // ✅ Scripture Meditations button
-  ArrowRight,          // ✅ Learn Our Vision button
-  Clock,               // ✅ Service times
-  Sparkles,            // ✅ Daily Devotional
-  Flame,               // ✅ Devotional scripture
-  Eye,                 // ✅ View full flyer
-  Play,                // ✅ Play sermon
-  Disc,                // ✅ Stop/playing indicator
-  Headphones,          // ✅ Audio playback
-  Download,            // ✅ Download MP3
-  Calendar,            // ✅ Events
-  MapPin,              // ✅ Event location
-  Send,                // ✅ Prayer submit
-  Users,               // ✅ Prayer count
-  Heart,               // ✅ Prayer support
-  ShieldCheck,         // ✅ Leadership
-  DollarSign,          // ✅ Giving
-  UserIcon,            // ✅ Leadership fallback
+  BookOpen,
+  ArrowRight,
+  Clock,
+  Sparkles,
+  Flame,
+  Eye,
+  Play,
+  Disc,
+  Headphones,
+  Download,
+  Calendar,
+  MapPin,
+  Send,
+  Users,
+  Heart,
+  ShieldCheck,
+  DollarSign,
+  UserIcon,
 } from 'lucide-react'
 
-// ─── DYNAMIC IMPORTS ────────────────────────────────────────────
+// ============================================================================
+// DYNAMIC IMPORTS (code-split heavy client-only components)
+// ============================================================================
+
 const AudioPlayer = dynamic(() => import('@/components/ui/AudioPlayer'), {
   ssr: false,
   loading: () => <div className="h-8 bg-slate-100 rounded-lg animate-pulse" />,
@@ -62,8 +61,6 @@ const AudioPlayer = dynamic(() => import('@/components/ui/AudioPlayer'), {
 const LightboxModal = dynamic(() => import('@/components/ui/LightboxModal'), {
   ssr: false,
 })
-
-// ... rest of your code remains the same
 
 // ============================================================================
 // TYPES
@@ -277,41 +274,49 @@ async function fetchDevotional(client: ReturnType<typeof createClient>): Promise
 }
 
 async function fetchPrayers(client: ReturnType<typeof createClient>): Promise<PrayerCenterRequest[]> {
-  const { data, error } = await client
-    .from('prayer_requests')
-    .select('*')
-    .eq('status', 'approved')
-    .order('created_at', { ascending: false })
-    .limit(3)
+  try {
+    const { data, error } = await client
+      .from('prayer_requests')
+      .select('*')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(3)
 
-  if (error) {
-    console.warn('[Build] Prayer requests fetch failed:', error.message)
+    if (error) {
+      console.warn('[Build] Prayer requests fetch failed:', error.message)
+      return []
+    }
+
+    return (data || []).map((item) => ({
+      ...fromDB(item),
+      prayerCount: Number((item as Record<string, unknown>).prayer_count) || 0,
+      createdAt: (item as Record<string, unknown>).created_at
+        ? new Date((item as Record<string, unknown>).created_at as string).getTime()
+        : Date.now(),
+    })) as PrayerCenterRequest[]
+  } catch {
     return []
   }
-
-  return (data || []).map((item) => ({
-    ...fromDB(item),
-    prayerCount: Number((item as Record<string, unknown>).prayer_count) || 0,
-    createdAt: (item as Record<string, unknown>).created_at
-      ? new Date((item as Record<string, unknown>).created_at as string).getTime()
-      : Date.now(),
-  })) as PrayerCenterRequest[]
 }
 
 async function fetchLeadership(client: ReturnType<typeof createClient>): Promise<UserType[]> {
-  const { data, error } = await client
-    .from('users')
-    .select('*')
-    .in('role', ['pastor', 'ministry_leader', 'readership'])
-    .eq('status', 'active')
-    .limit(4)
+  try {
+    const { data, error } = await client
+      .from('users')
+      .select('*')
+      .in('role', ['pastor', 'ministry_leader', 'readership'])
+      .eq('status', 'active')
+      .limit(4)
 
-  if (error) {
-    console.warn('[Build] Leadership fetch failed:', error.message)
+    if (error) {
+      console.warn('[Build] Leadership fetch failed:', error.message)
+      return []
+    }
+
+    return (data || []).map((item) => fromDB(item)) as UserType[]
+  } catch {
     return []
   }
-
-  return (data || []).map((item) => fromDB(item)) as UserType[]
 }
 
 async function fetchSettings(client: ReturnType<typeof createClient>): Promise<ChurchSettings> {
@@ -889,7 +894,7 @@ export default function HomePage(props: HomePageProps) {
         </section>
 
         {/* ── 3. Daily Devotional ─────────────────────────────────────── */}
-        {devotional && (
+        {initialDevotional && (
           <section
             id="daily-devotional"
             className="py-24 bg-gradient-to-b from-white to-slate-50/50 border-b border-slate-100"
@@ -926,11 +931,11 @@ export default function HomePage(props: HomePageProps) {
                     </div>
                     <div>
                       <h3 className="font-extrabold text-slate-900 text-xl leading-tight">
-                        {devotional.title}
+                        {initialDevotional.title}
                       </h3>
                       <p className="text-xs text-indigo-600 font-semibold mt-1">
-                        {devotional.date
-                          ? new Date(devotional.date).toLocaleDateString(undefined, {
+                        {initialDevotional.date
+                          ? new Date(initialDevotional.date).toLocaleDateString(undefined, {
                               weekday: 'long',
                               year: 'numeric',
                               month: 'long',
@@ -943,14 +948,14 @@ export default function HomePage(props: HomePageProps) {
                   <div className="self-start sm:self-center">
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-950 bg-amber-400 px-4 py-2 rounded-2xl shadow-sm border border-amber-300">
                       <Flame className="w-3.5 h-3.5 text-amber-800" aria-hidden="true" />
-                      {devotional.scripture}
+                      {initialDevotional.scripture}
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-6">
                   <blockquote className="relative pl-6 border-l-4 border-indigo-600 italic font-medium text-slate-800 text-lg leading-relaxed bg-indigo-50/20 py-4 pr-4 rounded-r-2xl border border-indigo-100/30">
-                    {devotional.scriptureText}
+                    {initialDevotional.scriptureText}
                   </blockquote>
                   <div>
                     <h4 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2 flex items-center gap-1.5">
@@ -958,7 +963,7 @@ export default function HomePage(props: HomePageProps) {
                       Today&apos;s Meditation
                     </h4>
                     <p className="text-base text-slate-700 leading-relaxed font-light whitespace-pre-line">
-                      {devotional.reflection}
+                      {initialDevotional.reflection}
                     </p>
                   </div>
                   <div className="pt-6 mt-6 border-t border-slate-100">
@@ -966,7 +971,7 @@ export default function HomePage(props: HomePageProps) {
                       Guided Daily Prayer
                     </h4>
                     <p className="text-sm bg-indigo-50/30 text-slate-700 leading-relaxed italic p-6 rounded-2xl border border-indigo-100/40">
-                      &ldquo;{devotional.prayer}&rdquo;
+                      &ldquo;{initialDevotional.prayer}&rdquo;
                     </p>
                   </div>
                 </div>
@@ -1391,7 +1396,7 @@ export default function HomePage(props: HomePageProps) {
         </section>
 
         {/* ── 7. Leadership ───────────────────────────────────────────── */}
-        {leadership.length > 0 && (
+        {initialLeadership.length > 0 && (
           <section className="py-24 bg-white overflow-hidden" aria-labelledby="leadership-heading">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
@@ -1421,7 +1426,7 @@ export default function HomePage(props: HomePageProps) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {leadership.map((member, index) => (
+                {initialLeadership.map((member, index) => (
                   <motion.div
                     key={member.id}
                     initial={{ opacity: 0, y: 20 }}
