@@ -15,6 +15,10 @@
 //  • Type-safe — no 'any' in component code
 //  • Keyboard-navigable audio player
 // ============================================================================
+// pages/index.tsx
+// ============================================================================
+// NNCM Church Portal — Homepage
+// ============================================================================
 
 import { useState, useEffect, useCallback } from 'react'
 import { GetStaticProps } from 'next'
@@ -27,10 +31,29 @@ import { createClient } from '@supabase/supabase-js'
 import { getImageUrl } from '@/lib/image-utils'
 import type { Sermon, ChurchEvent, Devotional, PrayerCenterRequest, User as UserType } from '@/types'
 
-// ============================================================================
-// DYNAMIC IMPORTS (code-split heavy client-only components)
-// ============================================================================
+// ─── LUCIDE ICONS ──────────────────────────────────────────────
+import {
+  BookOpen,           // ✅ Scripture Meditations button
+  ArrowRight,          // ✅ Learn Our Vision button
+  Clock,               // ✅ Service times
+  Sparkles,            // ✅ Daily Devotional
+  Flame,               // ✅ Devotional scripture
+  Eye,                 // ✅ View full flyer
+  Play,                // ✅ Play sermon
+  Disc,                // ✅ Stop/playing indicator
+  Headphones,          // ✅ Audio playback
+  Download,            // ✅ Download MP3
+  Calendar,            // ✅ Events
+  MapPin,              // ✅ Event location
+  Send,                // ✅ Prayer submit
+  Users,               // ✅ Prayer count
+  Heart,               // ✅ Prayer support
+  ShieldCheck,         // ✅ Leadership
+  DollarSign,          // ✅ Giving
+  UserIcon,            // ✅ Leadership fallback
+} from 'lucide-react'
 
+// ─── DYNAMIC IMPORTS ────────────────────────────────────────────
 const AudioPlayer = dynamic(() => import('@/components/ui/AudioPlayer'), {
   ssr: false,
   loading: () => <div className="h-8 bg-slate-100 rounded-lg animate-pulse" />,
@@ -39,6 +62,8 @@ const AudioPlayer = dynamic(() => import('@/components/ui/AudioPlayer'), {
 const LightboxModal = dynamic(() => import('@/components/ui/LightboxModal'), {
   ssr: false,
 })
+
+// ... rest of your code remains the same
 
 // ============================================================================
 // TYPES
