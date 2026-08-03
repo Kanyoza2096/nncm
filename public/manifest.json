@@ -1,0 +1,60 @@
+{
+  "name": "New Nature in Christ Ministry",
+  "short_name": "NNCM Church Portal",
+  "description": "Progressive Web Application for New Nature in Christ Ministry Management and Portal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "any",
+  "categories": ["utilities", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Listen to Sermons",
+      "short_name": "Sermons",
+      "description": "View and listen to recent gospel sermons",
+      "url": "/sermons",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Submit Prayer Request",
+      "short_name": "Prayer",
+      "description": "Submit a prayer request to our Prayer Center",
+      "url": "/prayer",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Church Events Calendar",
+      "short_name": "Events",
+      "description": "Check our service times and special events",
+      "url": "/events",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
