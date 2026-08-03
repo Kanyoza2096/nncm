@@ -1,8 +1,7 @@
 // next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Removed output: 'export' — was for Cloudflare Pages static export.
-  // Running as a standard Next.js dev server on Replit instead.
+  output: 'export',  // ← Uncomment this for Cloudflare Pages
 
   images: {
     unoptimized: true,
