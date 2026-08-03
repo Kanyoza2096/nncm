@@ -38,7 +38,7 @@ export default function AdminTestimonialsPage() {
     if (!formData.name || !formData.content) { toast.error('Name and content required.'); return }
     setSubmitting(true)
     try {
-      await testimonialService.createTestimonial({ ...formData, photoURL: '' })
+      await testimonialService.createTestimonial({ ...formData, photoURL: '', date: Date.now() })
       toast.success('Testimonial added.')
       setShowForm(false); setFormData(EMPTY_FORM); fetchData()
     } catch { toast.error('Failed to add testimonial.') }
